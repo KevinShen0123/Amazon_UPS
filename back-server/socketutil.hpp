@@ -18,6 +18,9 @@
 #include <unistd.h>
 #include<pthread.h>
 #include <exception>
+
+using namespace std;
+
 int build_client(const char * hostname, const char * port) {
   struct addrinfo host_info;
   struct addrinfo * host_info_list;
@@ -44,7 +47,7 @@ int build_client(const char * hostname, const char * port) {
     exit(EXIT_FAILURE);
   }
 
-  //cout << "Connecting to " << hostname << " on port " << port << "..." << endl;
+  cout << "Connecting to " << hostname << " on port " << port << "..." << endl;
 
   status = connect(socket_fd, host_info_list->ai_addr, host_info_list->ai_addrlen);
   if (status == -1) {
@@ -56,6 +59,7 @@ int build_client(const char * hostname, const char * port) {
   freeaddrinfo(host_info_list);
   return socket_fd;
 }
+
 void sendTo(int socket_fd,std::string msg){
     int status=send(socket_fd,msg.c_str(),msg.length(),0);
     if(status==-1){
@@ -63,6 +67,7 @@ void sendTo(int socket_fd,std::string msg){
         throw std::exception();
     }
 }
+
 std::string recvFrom(int socket_fd,int length){
     char* recved=new char[length];
     int status=recv(socket_fd,recved,length,0);

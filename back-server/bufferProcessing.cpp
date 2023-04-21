@@ -18,18 +18,18 @@ UInitTruck uInitTruck(google::protobuf::int32 id,google::protobuf::int32 x,googl
     return uit;
 }
 UConnect uConnect(bool useWID,int wID, std::vector<UInitTruck> ts, bool isAmazon){
-UConnect uc;
-uc.set_isamazon(isAmazon);
-if(useWID){
-    uc.set_worldid(wID);
-}
-for(int i=0;i<ts.size();i++){
-    UInitTruck* t1=uc.add_trucks();
-    t1->set_id(ts[i].id());
-    t1->set_x(ts[i].x());
-    t1->set_y(ts[i].y());
-}
-return uc;
+	UConnect uc;
+	uc.set_isamazon(isAmazon);
+	if(useWID){
+			uc.set_worldid(wID);
+	}
+	for(int i=0;i<ts.size();i++){
+			UInitTruck* t1=uc.add_trucks();
+			t1->set_id(ts[i].id());
+			t1->set_x(ts[i].x());
+			t1->set_y(ts[i].y());
+	}
+	return uc;
 }
 UAConnectedToWorld uAConnectedToWorld(google::protobuf::int64 world_id,google::protobuf::int64 seq_num){
     UAConnectedToWorld uac;
