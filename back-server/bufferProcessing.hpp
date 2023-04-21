@@ -36,6 +36,7 @@ UCommands string_to_UCommands(std::string UC);
 UResponses string_to_UResponses(std::string urs);
 UACommands string_to_UACommands(std::string UAC);
 std::string UACommands_to_string(UACommands uac);
+AUCommands string_to_AUCommands(std::string auc);
 
 
 
