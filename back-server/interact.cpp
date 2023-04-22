@@ -7,11 +7,24 @@
 #include "interact.hpp"
 #include "amazon_ups.pb.h"
 #include <sstream>
+#include <vector>
 using namespace std;
 int curWorldId=-1;
 connection *C;
+
 int world_request_sequence_number=0;
 pthread_mutex_t thread_lock;
+
+void createTruck(vector<Truck> trucks){
+	for (int i=0; i< (int)trucks.size(); i++) {
+		addTruck(C, trucks[i].x, trucks[i].y, "idle");
+	}
+}
+
+void createOrder(AUOrderCreated auoc){
+	addOrder(C, auoc.orderid(), auoc.upsaccount(), auoc.destinationx(), auoc.destinationy());
+}
+
 UGoPickup pickup(AURequestTruck request, int world_socket){
   UGoPickup pick;
   work W(*C);
@@ -30,6 +43,7 @@ UGoPickup pickup(AURequestTruck request, int world_socket){
    pick.set_whid(request.whnum());
    return pick;
 }
+
 void createDelivery(int order_id,int package_id,int truck_id){
   std::stringstream sql;
   sql<<"SELECT * FROM Order WHERE orderid="<<order_id<<";";
@@ -46,6 +60,7 @@ void createDelivery(int order_id,int package_id,int truck_id){
   sql2<<"INSERT INTO Delivery(order_id,package_id,dest_x,dest_y,truck_id,status) VALUES("<<order_id<<","<<package_id<<","<<destx<<","<<desty<<","<<truck_id<<","<<0<<";";
   W.exec(sql2.str());
 }
+
 UGoDeliver startDelivery(int order_id,int package_id,int truck_id,int world_socket,int amazon_socket){
   UDeliveryLocation location;
   location.set_packageid(package_id);
@@ -67,6 +82,28 @@ UGoDeliver startDelivery(int order_id,int package_id,int truck_id,int world_sock
  UGoDeliver go=uGoDeliver(truck_id,world_request_sequence_number,locations);
  return go;
 }
+
+UAOrderDelivered deliveryMade(UDeliveryMade udm){
+	int pack_id = udm.packageid();
+	
+	updateDeliveryStatus(C, pack_id, "delivered");
+
+	stringstream sql;
+	sql<<"SELECT DEST_X, DEST_Y FROM Delivery WHERE PACKAGE_ID="<<pack_id<<";";
+  nontransaction T(*C);
+  result R(T.exec(sql.str()));
+  int destx=0;
+  int desty=0;
+  for (result::const_iterator c = R.begin(); c != R.end(); ++c) {
+     destx=c[0].as<int>();
+     desty=c[1].as<int>();
+     break;
+  }
+	UAOrderDelivered uaod = uAOrderDelivered(pack_id, destx, desty, world_request_sequence_number);
+	return uaod;
+
+}
+
 int connectToDatabase(){
 	try{
     C = new connection("dbname=mini_ups user=postgres password=20230101 host=127.0.0.1 port=5432");
@@ -114,7 +151,6 @@ int connectToWorld(const char * hostname, const char * port, int worldId){
 
 	return wld_socket;
 }
-
 
 int connectToAmazon(const char * hostname, const char * port){
 	int amz_socket = build_client(hostname, port);
@@ -190,6 +226,7 @@ void connectToFrontend(){
 	}
 
 }
+
 void* send_to_world(void* msgs){
   pthread_mutex_lock(&thread_lock);
   std::string* messages=(std::string *) msgs;
@@ -293,6 +330,19 @@ void* handleAmazonConnection(void* arguments){
   return NULL;
 }
 
+int createTruck(){
+
+}
+
+int createOrder(){
+
+}
+
+int deliveryMade(){
+	
+}
+
+
 int main(int argc, char* argv[] ){
 
 	if ( argc!=5 ) {
@@ -343,6 +393,7 @@ int main(int argc, char* argv[] ){
   
 	// connection to Frontend
 	connectToFrontend();
+
 }
 // int main(int argc, char**argv){ 
 //   UConnect c; 
