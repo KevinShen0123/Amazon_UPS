@@ -4,7 +4,7 @@ PROTOC = protoc
 
 # Compiler and linker flags
 CXXFLAGS = -std=c++11 -Wall
-LDFLAGS = -lprotobuf -lpthread
+LDFLAGS = -lprotobuf -lpthread -lpqxx
 
 # Target executable
 TARGET = my_project

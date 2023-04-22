@@ -1,6 +1,6 @@
 //for database querys, update the database;
 #include <pqxx/pqxx>
-
+using namespace pqxx;
 void addTruck(connection *C);
 
 void updateTruckStatus(connection *C, int truckid);

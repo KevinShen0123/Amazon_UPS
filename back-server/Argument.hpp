@@ -2,12 +2,18 @@
 
 class Argument {
  private:
-  int socket_fd;
-
-
+  int world_socket;
+  int amazon_socket;
  public:
-  Argument(int sfd): socket_fd(sfd){};
+  Argument(int world_socket,int amazon_socket){
+    this->world_socket=world_socket;
+    this->amazon_socket=amazon_socket;
+  };
   ~Argument();
-
-  int getSocketFd(){ return socket_fd; }
+  int getWorldSocket(){
+    return world_socket;
+  }
+  int getAmazonSocket(){
+    return amazon_socket;
+  }
 };

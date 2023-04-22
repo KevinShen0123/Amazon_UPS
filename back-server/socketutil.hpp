@@ -59,21 +59,55 @@ int build_client(const char * hostname, const char * port) {
   freeaddrinfo(host_info_list);
   return socket_fd;
 }
-
-void sendTo(int socket_fd,std::string msg){
-    int status=send(socket_fd,msg.c_str(),msg.length(),0);
-    if(status==-1){
-        std::cerr<<"send error!!!!!!!"<<std::endl;
-        throw std::exception();
-    }
-}
-
-std::string recvFrom(int socket_fd,int length){
-    char* recved=new char[length];
-    int status=recv(socket_fd,recved,length,0);
-    if(status==-1){
-        std::cerr<<"received error!!!!!"<<std::endl;
-        throw std::exception();
-    }
-    return std::string(recved,length);
-}
+template<typename T>
+	bool sendMesgTo(const T & message,int fd) {
+		//extra scope: make output go away before out->Flush()
+		// We create a new coded stream for each message. Don’t worry, this is fast.
+		int dupfd=dup(fd);
+		google::protobuf::io::FileOutputStream* out=new google::protobuf::io::FileOutputStream(dupfd);
+		google::protobuf::io::CodedOutputStream output(out);
+		// Write the size.
+		const int size = message.ByteSize();
+		output.WriteVarint32(size);
+		uint8_t* buffer = output.GetDirectBufferForNBytesAndAdvance(size);
+		if (buffer != NULL) {
+		// Optimization: The message fits in one buffer, so use the faster
+		// direct-to-array serialization path.
+		message.SerializeWithCachedSizesToArray(buffer);;
+		} 
+		else{
+			// Slightly-slower path when the message is multiple buffers.
+			message.SerializeAsString();
+		}
+		if (output.HadError()) {
+			delete out;
+			return false;
+		}
+		out->Flush();
+		std::cout<<"send finished!!!!!!!"<<out->GetErrno()<<std::endl;
+		return true;
+	}
+	template<typename T>
+	bool recvMesgFrom(T & message,int fd){
+		google::protobuf::io::FileInputStream * in = new google::protobuf::io::FileInputStream(fd);
+		google::protobuf::io::CodedInputStream input(in);
+		uint32_t size;
+		if (!input.ReadVarint32(&size)) {
+			delete in;
+			return false;
+		}
+		// Tell the stream not to read beyond that size.
+		google::protobuf::io::CodedInputStream::Limit limit = input.PushLimit(size);
+		// Parse the message.
+		if (!message.MergeFromCodedStream(&input)) {
+			delete in;
+			return false;
+		}
+		if (!input.ConsumedEntireMessage()) {
+			delete in;
+			return false;
+		}
+		// Release the limit.
+		input.PopLimit(limit);
+		return true;
+	}
