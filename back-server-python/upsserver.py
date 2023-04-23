@@ -11,16 +11,19 @@ import world_ups_pb2
 from google.protobuf.internal.encoder import _EncodeVarint
 import amazon_ups_pb2
 import psycopg2
+import protocol_buffer
+
 total_lock=threading.Lock()
 world_socket_lock=threading.Lock()
 amazon_socket_lock=threading.Lock()
-import protocol_buffer
+
 world_connected=False
 request_amazon_seqnum=0
 request_world_seqnum=0
 world_id=1
 world_acked_num=[]
 amazon_acked_num=[]
+
 def recv_msg(socket_) -> str:
     var_int_buff = []
     while True:
@@ -39,24 +42,29 @@ def recv_msg(socket_) -> str:
     print("msg_len: " + str(msg_len) + "\n")
     whole_message = socket_.recv(msg_len)
     return whole_message, False
+
 def send_message_to_world(socket,msg):
     string_msg = msg.SerializeToString()
     world_socket_lock.acquire()
     _EncodeVarint(socket.send, len(string_msg), None)
     socket.send(string_msg)
     world_socket_lock.release()
+
 def send_message_to_amazon(socket,msg):
     string_msg = msg.SerializeToString()
     amazon_socket_lock.acquire()
     _EncodeVarint(socket.send, len(string_msg), None)
     socket.send(string_msg)
     amazon_socket_lock.release()
+
 def send_message_to_world_and_check_ack(socket,msg,seqnum):#same as method below
     while world_acked_num.count(seqnum)==0:
         send_message_to_world(socket,msg)
+
 def send_message_to_amazon_and_check_ack(socket,msg,seqnum):# method for continue send message until ack got, you can create a thread for the method
     while amazon_acked_num.count(seqnum)==0:
         send_message_to_amazon(socket,msg)
+
 def connect_world_socket():
     world_host = '127.0.0.1'
     world_info = (world_host, 12345)
@@ -70,6 +78,7 @@ def connect_world_socket():
         print("having problem in connectiong to world\n")
         socket_to_world.close()
         sys.exit(1)
+
 def uconnect_world(uconnectmessage,world_socket):
     send_message_to_world(world_socket, uconnectmessage)
     message, noexception = recv_msg(world_socket)
@@ -80,6 +89,7 @@ def uconnect_world(uconnectmessage,world_socket):
     except:
          print("connect world error!!!!")
          sys.exit(1)
+
 def connect_to_amazon(ip,port):
     world_info = (ip, port)
     socket_to_amazon = socket.socket()
@@ -92,6 +102,7 @@ def connect_to_amazon(ip,port):
         print("having problem in connectiong to world\n")
         socket_to_amazon.close()
         sys.exit(1)
+
 def handle_world_ack(responses):
     for ack1 in responses.acks():
         if world_acked_num.contains(ack1):
@@ -100,6 +111,7 @@ def handle_world_ack(responses):
             total_lock.acquire()
             world_acked_num.append(ack1)
             total_lock.release()
+
 def handle_amazon_ack(command):
     for ack1 in command.acks():
         if amazon_acked_num.count(ack1)>0:
@@ -108,6 +120,7 @@ def handle_amazon_ack(command):
             total_lock.acquire()
             amazon_acked_num.append(ack1)
             total_lock.release()
+
 def handle_world_connections(database_connect,world_socket,amazon_socket):
     global world_connected
     UconnectMsg=world_ups_pb2.UConnect()
@@ -180,9 +193,42 @@ def handle_amazon_connections(database_connect,world_socket,amazon_socket):
                 #send ack back to amazon
             except:
                 print("response error")
+
 def connect_to_database():
-     connect=psycopg2.connect(host="127.0.0.1",database="mini_ups",user="postgres",password="20230101")
-     return connect
+    connect=psycopg2.connect(host="127.0.0.1",database="mini_ups",user="postgres",password="20230101")
+    cur = connect.cursor()
+
+    cur.execute("DROP TABLE IF EXISTS TRUCK CASCADE;")
+    cur.execute("DROP TABLE IF EXISTS ORDER CASCADE;")
+    cur.execute("DROP TABLE IF EXISTS DELIVERY CASCADE;")
+
+    cur.execute("CREATE TABLE IF NOT EXISTS TRUCK(TRUCK_ID INT PRIMARY KEY, X INT, Y INT, T_STATUS VARCHAR(256));")
+    print("Creating TRUCK table")
+
+    cur.execute('''CREATE TABLE IF NOT EXISTS ORDER(
+                ORDER_ID INT PRIMARY KEY,
+                UPSACCOUNT VARCHAR(256),
+                DEST_X INT,
+                DEST_Y INT
+                );''')
+    print("Creating ORDER table")
+
+    cur.execute('''CREATE TABLE IF NOT EXISTS DELIVERY(
+                DELIVERY_ID SERIAL,
+                PAKCAGE_ID INT PRIMARY KEY,
+                ORDER_ID INT, 
+                TRUCK_ID INT,
+                DEST_X INT,
+                DEST_Y INT,
+                DESCR VARCHAR(256),
+                D_STATUS VARCHAR(256),
+                FOREIGN KEY (ORDER_ID) REFERENCES ORDER(ORDER_ID) ON DELETE CASCADE ON UPDATE CASCADE
+                );''')
+    print("Creating DELIVERY table")
+    connect.commit()
+    connect.close()
+    return connect
+
 amazon_ip="" #可以随时更改
 amazon_port=5555  #可以随时更改
 world_socket=connect_world_socket()
