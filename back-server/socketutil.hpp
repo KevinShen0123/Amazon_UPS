@@ -20,12 +20,22 @@
 #include <exception>
 
 using namespace std;
-
-int build_client(const char * hostname, const char * port) {
-  struct addrinfo host_info;
-  struct addrinfo * host_info_list;
-  int socket_fd;
-  int status;
+class Socket{
+public:
+    google::protobuf::io::FileOutputStream*world_socketstream;
+	google::protobuf::io::FileOutputStream*amazon_socketstream;
+	Socket(int world_socket,int amazon_socket){
+		world_socketstream=new google::protobuf::io::FileOutputStream(world_socket);
+		amazon_socketstream=new google::protobuf::io::FileOutputStream(amazon_socket);
+	}
+	Socket(){
+		
+	}
+	int build_client(const char * hostname, const char * port) {
+     struct addrinfo host_info;
+    struct addrinfo * host_info_list;
+    int socket_fd;
+    int status;
 
   memset(&host_info, 0, sizeof(host_info));
   host_info.ai_family = AF_UNSPEC;
@@ -60,13 +70,13 @@ int build_client(const char * hostname, const char * port) {
   return socket_fd;
 }
 template<typename T>
-	bool sendMesgTo(const T & message,int fd) {
+	bool sendMesgTo(const T & message,bool is_world) {
 		//extra scope: make output go away before out->Flush()
 		// We create a new coded stream for each message. Don’t worry, this is fast.
-		int dupfd=dup(fd);
-		google::protobuf::io::FileOutputStream* out=new google::protobuf::io::FileOutputStream(dupfd);
-		google::protobuf::io::CodedOutputStream output(out);
-		// Write the size.
+		if(is_world){
+			   	google::protobuf::io::FileOutputStream*out=world_socketstream;
+          		google::protobuf::io::CodedOutputStream output(out);
+				// Write the size.
 		const int size = message.ByteSize();
 		output.WriteVarint32(size);
 		uint8_t* buffer = output.GetDirectBufferForNBytesAndAdvance(size);
@@ -86,6 +96,30 @@ template<typename T>
 		out->Flush();
 		std::cout<<"send finished!!!!!!!"<<out->GetErrno()<<std::endl;
 		return true;
+		}else{
+			google::protobuf::io::FileOutputStream*out=amazon_socketstream;
+			google::protobuf::io::CodedOutputStream output(out);
+			// Write the size.
+		const int size = message.ByteSize();
+		output.WriteVarint32(size);
+		uint8_t* buffer = output.GetDirectBufferForNBytesAndAdvance(size);
+		if (buffer != NULL) {
+		// Optimization: The message fits in one buffer, so use the faster
+		// direct-to-array serialization path.
+		message.SerializeWithCachedSizesToArray(buffer);;
+		} 
+		else{
+			// Slightly-slower path when the message is multiple buffers.
+			message.SerializeAsString();
+		}
+		if (output.HadError()) {
+			delete out;
+			return false;
+		}
+		out->Flush();
+		std::cout<<"send finished!!!!!!!"<<out->GetErrno()<<std::endl;
+		return true;
+		}
 	}
 	template<typename T>
 	bool recvMesgFrom(T & message,int fd){
@@ -111,3 +145,4 @@ template<typename T>
 		input.PopLimit(limit);
 		return true;
 	}
+};

@@ -83,7 +83,8 @@ int connectToDatabase(){
 
 // create a new world, set worldId = -1
 int connectToWorld(const char * hostname, const char * port, int worldId){
-	int wld_socket=build_client(hostname,port);	
+  Socket* s=new Socket();
+	int wld_socket=s->build_client(hostname,port);	
 
 
 	// generate UConnect
@@ -117,7 +118,8 @@ int connectToWorld(const char * hostname, const char * port, int worldId){
 
 
 int connectToAmazon(const char * hostname, const char * port){
-	int amz_socket = build_client(hostname, port);
+  Socket*s=new Socket();
+	int amz_socket = s->build_client(hostname, port);
 }
 
 void connectToFrontend(){
@@ -293,7 +295,7 @@ void* handleAmazonConnection(void* arguments){
   return NULL;
 }
 
-int main(int argc, char* argv[] ){
+int main_func(int argc, char* argv[] ){
 
 	if ( argc!=5 ) {
 		cout<<"ERROR: Invalid Command Line Argument."<<endl;
@@ -344,35 +346,33 @@ int main(int argc, char* argv[] ){
 	// connection to Frontend
 	connectToFrontend();
 }
-// int main(int argc, char**argv){ 
-//   UConnect c; 
-//   c.set_isamazon(false);
-//   int world_socket=build_client("127.0.0.1","12345");
-//   std::cout<<"fault2"<<std::endl;
-//   google::protobuf::io::FileOutputStream* out=new google::protobuf::io::FileOutputStream(world_socket);
-// 		google::protobuf::io::CodedOutputStream output(out);
-// 		// Write the size.
-// 		const int size = c.ByteSize();
-// 		output.WriteVarint32(size);
-// 		uint8_t* buffer = output.GetDirectBufferForNBytesAndAdvance(size);
-// 		if (buffer != NULL) {
-// 		// Optimization: The message fits in one buffer, so use the faster
-// 		// direct-to-array serialization path.
-// 		c.SerializeWithCachedSizesToArray(buffer);;
-// 		} 
-// 		else{
-// 			// Slightly-slower path when the message is multiple buffers.
-// 			c.SerializeAsString();
-// 		}
-// 		if (output.HadError()) {
-// 			delete out;
-// 			return false;
-// 		}
-// 		out->Flush();
-// 		std::cout<<"send finished!!!!!!!"<<out->GetErrno()<<std::endl;
-//   std::cout<<"fault1"<<std::endl;
-//   UConnected ud;
-//   recvMesgFrom(ud,world_socket);
-//   std::cout<<"receive message success!!!!!!!"<<std::endl;
-//   std::cout<<ud.worldid()<<"  "<<ud.result()<<std::endl;
-// }
+int main(int argc, char**argv){ 
+ UConnect*c=new UConnect();
+c->set_isamazon(false);
+Socket* s = new Socket();
+int world_socket = s->build_client("127.0.0.1", "12345");
+std::cout << "fault2" << std::endl;
+google::protobuf::io::FileOutputStream* out = new google::protobuf::io::FileOutputStream(world_socket);
+out->SetCloseOnDelete(false);
+google::protobuf::io::CodedOutputStream output(out);
+// Write the size.
+const int size = c->ByteSize();
+output.WriteVarint32(size);
+if (!output.HadError()) {
+  uint8_t* buffer = (uint8_t*) malloc(size);
+  c->SerializeWithCachedSizesToArray(buffer);
+  output.WriteRaw(buffer, size);
+  free(buffer);
+}
+if (output.HadError()) {
+  delete out;
+  return false;
+}
+out->Flush();
+std::cout << "send finished!!!!!!!" << out->GetErrno() << std::endl;
+UConnected ud;
+s->recvMesgFrom(ud, world_socket);
+std::cout << "receive message success!!!!!!!" << std::endl;
+std::cout << ud.worldid() << "  " << ud.result() << std::endl;
+return 0;
+}
