@@ -81,18 +81,6 @@ def send_message_to_amazon_and_check_ack(socket,msg,seqnum):# method for continu
         if all_acked==True:
               break
         send_message_to_amazon(socket,msg)
-def connect_frontend_socket(frontip,frontport):
-    world_info = (frontip, frontport)
-    socket_to_front = socket.socket()
-    try:
-        socket_to_front.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-        socket_to_front.connect(world_info)
-        print("connect to frontend" + "\n")
-        return socket_to_front
-    except:
-        print("having problem in connectiong to frontend\n")
-        socket_to_front.close()
-        sys.exit(1)
 def handle_front_end(databaseconnection,socket_to_front,socket_to_world,socket_to_amazon):
      #update destination address
      while True:
@@ -118,6 +106,20 @@ def handle_front_end(databaseconnection,socket_to_front,socket_to_world,socket_t
              uacommand.destinationupdated.append(destinationupdated)
              amazonThread=Thread(target=send_message_to_amazon_and_check_ack,args=(amazon_socket,uacommand,uaseqnum))
              amazonThread.start()
+def connect_frontend_socket(databaseconnection,socket_to_world,socket_to_amz, frontip,frontport):
+    try:
+        print("dock to frontend")
+        ip_port_frontend = ('0.0.0.0', 8888)
+        s_to_frontend = socket.socket()
+        s_to_frontend.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s_to_frontend.bind(ip_port_frontend)
+        s_to_frontend.listen(5)
+        while True:
+            frontend, _ = s_to_frontend.accept()
+            t=Thread(target=handle_front_end,args=(databaseconnection,s_to_frontend,socket_to_world,socket_to_amz))
+            t.start()
+    except Exception as ex:
+        print(ex)
 def connect_world_socket():
     world_host = '127.0.0.1'
     world_info = (world_host, 12345)
@@ -427,7 +429,7 @@ worldThread=Thread(target=handle_world_connections,args=(database_connection,wor
 database_connection=connect_to_database()
 amazonThread=Thread(target=handle_amazon_connections,args=(database_connection,world_socket,amazon_socket))
 database_connection=connect_to_database()
-frontThread=Thread(target=handle_front_end,args=(database_connection,front_socket,world_socket,amazon_socket))
+frontThread=Thread(target=connect_frontend_socket,args=(world_socket,amazon_socket,front_ip,front_port))
 worldThread.start()
 amazonThread.start()
 frontThread.start()
