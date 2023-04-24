@@ -81,7 +81,43 @@ def send_message_to_amazon_and_check_ack(socket,msg,seqnum):# method for continu
         if all_acked==True:
               break
         send_message_to_amazon(socket,msg)
-
+def connect_frontend_socket(frontip,frontport):
+    world_info = (frontip, frontport)
+    socket_to_front = socket.socket()
+    try:
+        socket_to_front.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+        socket_to_front.connect(world_info)
+        print("connect to frontend" + "\n")
+        return socket_to_front
+    except:
+        print("having problem in connectiong to frontend\n")
+        socket_to_front.close()
+        sys.exit(1)
+def handle_front_end(databaseconnection,socket_to_front,socket_to_world,socket_to_amazon):
+     #update destination address
+     while True:
+         msg,noexception=recv_msg(socket_to_front)
+         uacommand=amazon_ups_pb2.UACommands()
+         uaseqnum=[]
+         if not noexception:
+             print("connect error for frontend!!!!!")
+             break
+         else:
+             msg_arr=msg.split(",")
+             pid=int(msg_arr[0])
+             destx=int(msg_arr[1])
+             desty=int(msg_arr[2])
+             updateDeliveryStatus(databaseconnection,destx,desty)
+             dinfo = get_delivery(databaseconnection, pid)
+             oid = dinfo[0][2]
+             amazon_seq_lock.acquire()
+             request_amazon_seqnum+=1
+             uaseqnum.append(request_amazon_seqnum)
+             amazon_seq_lock.release()
+             destinationupdated=protocol_buffer.to_UADestinationUpdated(oid,destx,desty,request_amazon_seqnum)
+             uacommand.destinationupdated.append(destinationupdated)
+             amazonThread=Thread(target=send_message_to_amazon_and_check_ack,args=(amazon_socket,uacommand,uaseqnum))
+             amazonThread.start()
 def connect_world_socket():
     world_host = '127.0.0.1'
     world_info = (world_host, 12345)
@@ -113,10 +149,10 @@ def connect_to_amazon(ip,port):
     try:
         socket_to_amazon.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
         socket_to_amazon.connect(world_info)
-        print("connect to world" + "\n")
+        print("connect to amazon" + "\n")
         return socket_to_amazon
     except:
-        print("having problem in connectiong to world\n")
+        print("having problem in connectiong to amazon\n")
         socket_to_amazon.close()
         sys.exit(1)
 
@@ -382,14 +418,22 @@ def connect_to_database():
 amazon_ip="" #可以随时更改
 amazon_port=5555  #可以随时更改
 world_socket=connect_world_socket()
+front_ip=""
+front_port=4444
+front_socket=connect_frontend_socket(front_ip,front_port)
 amazon_socket=connect_to_amazon(amazon_ip,amazon_port)
 database_connection=connect_to_database()
 worldThread=Thread(target=handle_world_connections,args=(database_connection,world_socket,amazon_socket))
+database_connection=connect_to_database()
 amazonThread=Thread(target=handle_amazon_connections,args=(database_connection,world_socket,amazon_socket))
+database_connection=connect_to_database()
+frontThread=Thread(target=handle_front_end,args=(database_connection,front_socket,world_socket,amazon_socket))
 worldThread.start()
 amazonThread.start()
+frontThread.start()
 worldThread.join()
 amazonThread.join()
+frontThread.join()
 
 
 
