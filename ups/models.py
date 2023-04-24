@@ -6,23 +6,45 @@ from model_utils import Choices
 # Create your models here.
 
 class Truck(models.Model):
-    STATUS = Choices('available', 'pickingup', 'delivering') 
+
+    x = models.IntegerField()
+    y = models.IntegerField()
+    STATUS = Choices('idle', 'go pickup', 'arrive wharehouse', 'delivering', 'delivered') 
     status = StatusField()
     def __str__(self):
         return self.id + ", status: " + self.status
 
+    class Meta:
+        managed = False
+        db_table = 'truck'
 
-class Package(models.Model):
-    truck_id = models.ForeignKey(Truck, on_delete=models.CASCADE)
+
+class Order(models.Model):
+    order_id = models.IntegerField(primary_key=True)
+    upsaccount = models.CharField(max_length=100)
     dest_x = models.IntegerField()
     dest_y = models.IntegerField()
     def __str__(self):
-        return self.id + ", dest_x: " + self.dest_x + ", dest_y: " + self.dest_y 
+        return self.id + ", dest_x: " + self.dest_x + ", dest_y: " + self.dest_y
+    
+    class Meta:
+        managed = False
+        db_table = 'order' 
 
-class Shipment(models.Model):
+class Delivery(models.Model):
+    
+    package_id = models.IntegerField(primary_key=True)
+    order_id = models.ForeignKey(Order, on_delete=models.CASCADE)
     truck_id = models.ForeignKey(Truck, on_delete=models.CASCADE)
-    package = models.OneToOneField(Package, on_delete=models.CASCADE)
-    STATUS = Choices('pickedup', 'delivering', 'delivered') 
+    dest_x = models.IntegerField()
+    dest_y = models.IntegerField()
+    description = models.CharField(max_length=300)
+    STATUS = Choices('ready', 'delivering', 'delivered') 
     status = StatusField()
+    
     def __str__(self):
         return self.id + ", status: " + self.status
+
+    class Meta:
+        managed = False
+        db_table = 'delivery'

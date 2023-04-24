@@ -376,7 +376,7 @@ def handle_amazon_connections(database_connect,world_socket,amazon_socket):
             except:
               print("response error")
 def connect_to_database():
-    connect=psycopg2.connect(host="127.0.0.1",database="mini_ups",user="postgres",password="20230101")
+    connect=psycopg2.connect(host="127.0.0.1",database="mini_ups",user="postgres",password="passw0rd")
     cur = connect.cursor()
 
     cur.execute("DROP TABLE IF EXISTS TRUCK CASCADE;")
