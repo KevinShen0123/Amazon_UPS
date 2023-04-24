@@ -84,8 +84,18 @@ def search(request):
     context = {}
     if query:
         try:
-            package = Delivery.objects.get(tracking_number=query)
-            context['package'] = package
-        except Package.DoesNotExist:
+            cur_delivery = Delivery.objects.get(tracking_number=query)
+            context['delivery'] = cur_delivery
+        except Delivery.DoesNotExist:
             context['error_message'] = f"No package found with tracking number {query}."
     return render(request, 'main.html', context)
+
+def connect_backend(request):
+    msg = "123,1,2"
+    try:
+        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client.connect(('127.0.0.1', 8080))
+        client.send(msg.encode('utf-8'))
+        print(msg)
+    except:
+        error_message = 'lost connection to server!'

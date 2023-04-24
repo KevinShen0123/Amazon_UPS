@@ -29,7 +29,7 @@ class Order(models.Model):
     
     class Meta:
         managed = False
-        db_table = 'order' 
+        db_table = 'orders' 
 
 class Delivery(models.Model):
     

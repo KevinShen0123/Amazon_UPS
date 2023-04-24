@@ -10,5 +10,6 @@ urlpatterns = [
     path('logout', views.logout_page, name='logout_page'),
 		path('<int:pack_id>/packageDetail/', views.packageDetail, name='packageDetail'),
     path('search/', views.search, name='search'),
+    path('connect_backend/', views.connect_backend, name='connect_backend'),
 
 ]

@@ -81,6 +81,7 @@ def send_message_to_amazon_and_check_ack(socket,msg,seqnum):# method for continu
         if all_acked==True:
               break
         send_message_to_amazon(socket,msg)
+
 def connect_frontend_socket(frontip,frontport):
     world_info = (frontip, frontport)
     socket_to_front = socket.socket()
@@ -93,6 +94,7 @@ def connect_frontend_socket(frontip,frontport):
         print("having problem in connectiong to frontend\n")
         socket_to_front.close()
         sys.exit(1)
+
 def handle_front_end(databaseconnection,socket_to_front,socket_to_world,socket_to_amazon):
      #update destination address
      while True:
@@ -408,7 +410,7 @@ def connect_to_database():
     cur.execute('''CREATE TABLE IF NOT EXISTS WAREHOUSE(
                    X INT,
                    Y INT,
-                   WHID PRIMARY KEY
+                   WHID INT PRIMARY KEY
                    );''')
     print("Creating DELIVERY table")
     connect.commit()
@@ -418,15 +420,18 @@ def connect_to_database():
 amazon_ip="" #可以随时更改
 amazon_port=5555  #可以随时更改
 world_socket=connect_world_socket()
-front_ip=""
-front_port=4444
+front_ip="127.0.0.1"
+front_port=8080
 front_socket=connect_frontend_socket(front_ip,front_port)
 amazon_socket=connect_to_amazon(amazon_ip,amazon_port)
 database_connection=connect_to_database()
+
 worldThread=Thread(target=handle_world_connections,args=(database_connection,world_socket,amazon_socket))
 database_connection=connect_to_database()
+
 amazonThread=Thread(target=handle_amazon_connections,args=(database_connection,world_socket,amazon_socket))
 database_connection=connect_to_database()
+
 frontThread=Thread(target=handle_front_end,args=(database_connection,front_socket,world_socket,amazon_socket))
 worldThread.start()
 amazonThread.start()
@@ -434,6 +439,4 @@ frontThread.start()
 worldThread.join()
 amazonThread.join()
 frontThread.join()
-
-
 
