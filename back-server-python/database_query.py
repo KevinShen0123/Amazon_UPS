@@ -54,9 +54,15 @@ def updateDeliveryStatus(connect, packageId, status):
 
 def updateDeliveryAddr(connect, packageId, dest_x, dest_y):
     cur = connect.cursor()
-    sql = "UPDATE DELIVERY SET DEST_X ="+str(dest_x)+" ,DEST_Y="+str(dest_y)+" WHERE PACKAGE_ID="+str(packageId)+";"
-    print("updateDelivery: "+sql)
-    cur.execute(sql)
+    sql_delivery = "UPDATE DELIVERY SET DEST_X ="+str(dest_x)+" ,DEST_Y="+str(dest_y)+" WHERE PACKAGE_ID="+str(packageId)+";"
+    cur.execute(sql_delivery)
+    print("updateDelivery: "+sql_delivery)
+
+    sql_order = "UPDATE UPS_ORDER SET DEST_X ="+str(dest_x)+" ,DEST_Y="+str(dest_y)+" WHERE PACKAGE_ID="+str(packageId)+";"
+    cur.execute(sql_order)
+    print("updateDelivery: "+sql_order)
+    
+    cur.execute(sql_delivery)
     connect.commit()
     # connect.close()
 

@@ -378,7 +378,7 @@ def handle_amazon_connections(database_connect,world_socket,amazon_socket):
             except:
               print("response error")
 def connect_to_database():
-    connect=psycopg2.connect(host="127.0.0.1",database="mini_ups",user="postgres",password="20230101")
+    connect=psycopg2.connect(host="127.0.0.1",database="mini_ups",user="postgres",password="passw0rd")
     cur = connect.cursor()
 
     cur.execute("DROP TABLE IF EXISTS TRUCK CASCADE;")
@@ -410,7 +410,7 @@ def connect_to_database():
     cur.execute('''CREATE TABLE IF NOT EXISTS WAREHOUSE(
                    X INT,
                    Y INT,
-                   WHID PRIMARY KEY
+                   WHID INT PRIMARY KEY
                    );''')
     print("Creating DELIVERY table")
     connect.commit()
@@ -420,22 +420,24 @@ def connect_to_database():
 amazon_ip="" #可以随时更改
 amazon_port=5555  #可以随时更改
 world_socket=connect_world_socket()
-front_ip=""
-front_port=4444
+front_ip="127.0.0.1"
+front_port=8080
 front_socket=connect_frontend_socket(front_ip,front_port)
 amazon_socket=connect_to_amazon(amazon_ip,amazon_port)
-database_connection=connect_to_database()
-worldThread=Thread(target=handle_world_connections,args=(database_connection,world_socket,amazon_socket))
-database_connection=connect_to_database()
-amazonThread=Thread(target=handle_amazon_connections,args=(database_connection,world_socket,amazon_socket))
-database_connection=connect_to_database()
-frontThread=Thread(target=connect_frontend_socket,args=(world_socket,amazon_socket,front_ip,front_port))
+database_connection1=connect_to_database()
+
+worldThread=Thread(target=handle_world_connections,args=(database_connection1,world_socket,amazon_socket))
+database_connection2=connect_to_database()
+
+amazonThread=Thread(target=handle_amazon_connections,args=(database_connection2,world_socket,amazon_socket))
+database_connection3=connect_to_database()
+frontThread=Thread(target=connect_frontend_socket,args=(database_connection3,world_socket,amazon_socket,front_ip,front_port))
 worldThread.start()
 amazonThread.start()
 frontThread.start()
 worldThread.join()
 amazonThread.join()
 frontThread.join()
-
-
-
+database_connection1.close()
+database_connection2.close()
+database_connection3.close()

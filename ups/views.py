@@ -3,7 +3,7 @@ from django.shortcuts import render
 from datetime import datetime
 from django.shortcuts import get_object_or_404, render
 from django.http import HttpResponse, HttpResponseRedirect
-from .models import Package, Shipment, Truck
+from .models import Order, Delivery, Truck
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth import authenticate, logout
@@ -29,7 +29,7 @@ def login_page(request):
             #user = authenticate(username=username, password=password)   # Django authenticate
             if user:
                 auth_login(request, user)    #
-                return HttpResponseRedirect('/main/')
+                return HttpResponseRedirect('/')
             else:
                 return render(request, 'login.html', {
                     'err_code': 'Invalid username/password'
@@ -39,6 +39,7 @@ def login_page(request):
             return render(request, 'login.html', {'err_code': 'Invalid username/password'})
        
     return render(request, 'login.html')
+
 
 def logout_page(request):
     auth_logout(request)
@@ -62,17 +63,39 @@ def signup_page(request):
             return HttpResponseRedirect('/')
     return render(request, 'signup.html')
 
-@login_required
+
 def main(request):
     user = request.user
+    is_authenticated = request.user.is_authenticated
     context = {
         'packageList':{},
         'user':user,
+        'is_authenticated': is_authenticated
     } 
     return render(request, 'main.html', context)
 
 
 @login_required
 def packageDetail(request, pack_id):
-   
-    return render(request, 'packagedetail.html', context)
+    return render(request, 'packagedetail.html')
+
+def search(request):
+    query = request.GET.get('q')
+    context = {}
+    if query:
+        try:
+            cur_delivery = Delivery.objects.get(tracking_number=query)
+            context['delivery'] = cur_delivery
+        except Delivery.DoesNotExist:
+            context['error_message'] = f"No package found with tracking number {query}."
+    return render(request, 'main.html', context)
+
+def connect_backend(request):
+    msg = "123,1,2"
+    try:
+        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client.connect(('127.0.0.1', 8080))
+        client.send(msg.encode('utf-8'))
+        print(msg)
+    except:
+        error_message = 'lost connection to server!'
