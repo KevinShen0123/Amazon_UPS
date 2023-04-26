@@ -29,7 +29,10 @@ amazon_connect_world=False
 def recv_msg(socket_) -> str:
     var_int_buff = []
     while True:
+        print(socket_)
+        print("receive is called!!!!")
         buf = socket_.recv(1)
+        print("received!!!!!!!!")
         if len(buf) <= 0:  # socket closes
             return None, True
         var_int_buff += buf
@@ -53,44 +56,77 @@ def send_message_to_world(socket,msg):
     world_socket_lock.acquire()
     _EncodeVarint(socket.send, len(string_msg), None)
     socket.send(string_msg)
+    time.sleep(2)
     world_socket_lock.release()
 
 def send_message_to_amazon(socket,msg):
+    # print("KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK")
+    if type(msg)!=type(amazon_ups_pb2.UACommands()):
+        raise Exception()
+    # print("PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP")
     string_msg = msg.SerializeToString()
     amazon_socket_lock.acquire()
     _EncodeVarint(socket.send, len(string_msg), None)
     socket.send(string_msg)
+    time.sleep(2)
     amazon_socket_lock.release()
 
 def send_message_to_world_and_check_ack(socket,msg,seqnum,pure_ack):#same as method below
+    print("world socket is")
+    print(socket)
+    print("world socket is")
+    global world_acked_num
     while True:
         all_acked = True
+        if pure_ack == True:
+            print("message is sent")
+            print("send message is ")
+            print(msg)
+            print("send message that that")
+            send_message_to_world(socket, msg)
+            break
         for seqnums in seqnum:
-            if amazon_acked_num.count(seqnums) == 0:
+            if world_acked_num.count(seqnums)==0:
                 all_acked = False
                 break
+        if len(world_acked_num)==0:
+            all_acked=False
         if all_acked == True and pure_ack==False:
             break
-        if pure_ack==True:
-          print("message is sent")
-          send_message_to_world(socket, msg)
-          break
         send_message_to_world(socket, msg)
 def send_message_to_amazon_and_check_ack(socket,msg,seqnum,pure_ack):# method for continue send message until ack got, you can create a thread for the method
     # while amazon_acked_num.count(seqnum)==0:
     #     send_message_to_amazon(socket,msg)
+    global amazon_acked_num
+    uacommands=amazon_ups_pb2.UACommands()
+    if(type(msg)!=type(uacommands)):
+        print("How come!!!!!!!!!!!")
+        raise Exception()
+    print(type(msg))
+    uacommands=amazon_ups_pb2.UACommands()
+    print("msg is: "+str(msg))
+    print("seqnum is:"+str(seqnum))
     while True:
+        # print("send message!!!!")
         all_acked=True
+        #print("alist is:"+str(amazon_acked_num))
+        if pure_ack==True:
+            print("message is send!!!!!!!!")
+            print("socket is::::"+str(socket))
+            print("message is::"+str(msg))
+            print(msg)
+            print("message type::"+str(msg))
+            send_message_to_amazon(socket,msg)
+            print("send success!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            break
         for seqnums in seqnum:
              if amazon_acked_num.count(seqnums)==0:
                  all_acked=False
                  break
+        if len(amazon_acked_num)==0:
+            all_acked=False
         if all_acked==True and pure_ack==False:
               break
-        if pure_ack==True:
-            print("message is send!!!!!!!!")
-            send_message_to_amazon(socket,msg)
-            break
         send_message_to_amazon(socket, msg)
         # print("send successful!!!!!!!!")
 def handle_front_end(databaseconnection,socket_to_front,socket_to_world,socket_to_amazon):
@@ -99,7 +135,7 @@ def handle_front_end(databaseconnection,socket_to_front,socket_to_world,socket_t
          msg,noexception=recv_msg(socket_to_front)
          uacommand=amazon_ups_pb2.UACommands()
          uaseqnum=[]
-         if not noexception:
+         if noexception:
              print("connect error for frontend!!!!!")
              break
          else:
@@ -151,19 +187,28 @@ def uconnect_world(uconnectmessage,world_socket):
     message, noexception = recv_msg(world_socket)
     uconnected=world_ups_pb2.UConnected()
     try:
+        print(message)
         uconnected.ParseFromString(message)
+        print("connect result is:::::: ")
+        print(uconnected)
+        print(uconnected.result)
+        print(uconnected.worldid)
+        print("connect result that!!!!!!")
         return uconnected
     except:
          print("connect world error!!!!")
          sys.exit(1)
 
 def connect_to_amazon(ip,port):
+    print("ip:"+str(ip))
+    print("port"+str(port))
+    print(type(port))
     world_info = (ip, port)
     socket_to_amazon = socket.socket()
     try:
         socket_to_amazon.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
         socket_to_amazon.connect(world_info)
-        print("connect to amazon" + "\n")
+        print("connect to amazon" + " ip is: "+str(ip)+"port is: "+str(port))
         return socket_to_amazon
     except:
         print("having problem in connectiong to amazon\n")
@@ -171,8 +216,9 @@ def connect_to_amazon(ip,port):
         sys.exit(1)
 
 def handle_world_ack(responses):
+    global world_acked_num
     for ack1 in responses.acks:
-        if world_acked_num.contains(ack1):
+        if world_acked_num.count(ack1)>0:
             continue
         else:
             world_ack_lock.acquire()
@@ -180,36 +226,44 @@ def handle_world_ack(responses):
             world_ack_lock.release()
 
 def handle_amazon_ack(command):
+    global amazon_acked_num
+    print("handle is called!!!!!")
     for ack1 in command.acks:
         print("ack is: "+str(ack1))
-        if amazon_acked_num.count(ack1)>0:
+        if len(amazon_acked_num)>0 and amazon_acked_num.count(ack1)>0:
+            print("continue??????")
             continue
         else:
             amazon_ack_lock.acquire()
             amazon_acked_num.append(ack1)
             amazon_ack_lock.release()
+        print("list is::" + str(amazon_acked_num))
 
 def handle_world_connections(database_connect,world_socket,amazon_socket):
    global request_world_seqnum
    global request_amazon_seqnum
-   global amazon_connect_world
+   global world_id
+   global world_connected
    while amazon_connect_world is False:
-         print("Please wait amazon to connect world")
+         # print("Please wait amazon to connect world")
          i=1
    print("amazon connected!!!!!!!!")
+   print(" world id is::"+str(world_id))
    uconnectmessage=world_ups_pb2.UConnect()
    uconnectmessage.worldid=world_id
    uconnectmessage.isAmazon=False
    truckid=0
-   for i in range(10):
-        for j in range(10):
+   for i in range(15):
+        for j in range(15):
             uinittruck=protocol_buffer.to_UInitTruck(truckid,i,j)
             uconnectmessage.trucks.append(uinittruck)
             addTruck(database_connect,truckid,i,j,"idle")
             truckid=truckid+1
    ud=uconnect_world(uconnectmessage,world_socket)
-   if ud.result!="connected":
+   print("The ud is::::::;"+ud.result)
+   if ud.result!="connected!":
        print("connect error!!!!!!!!!!")
+   print("world connected!!!!!!!")
    global world_connected
    world_connected=True
    while True:
@@ -225,15 +279,23 @@ def handle_world_connections(database_connect,world_socket,amazon_socket):
              aseqnum=[]
              try:
                  uResponseMessage.ParseFromString(message)
+                 print("message is:::::")
+                 print(uResponseMessage)
+                 print("message that::::::")
                  handle_world_ack(uResponseMessage)
+                 count=0
                  for ufinish in uResponseMessage.completions:
+                          count+=1
                           ucommand.acks.append(ufinish.seqnum)
-                          if ufinish.status=="idle":
+                          truckinfo=getTruckStatus(database_connect,ufinish.truckid)
+                          print(truckinfo)
+                          if truckinfo[0][0]=="delivering":
                                dinfo=getCurrDelivery(database_connect,ufinish.truckid)
-                               updateDeliveryStatus(database_connect,dinfo[1],"delivered")
-                               updateTruckStatus(database_connect,dinfo[3],"idle")
+                               for dinfos in dinfo:
+                                   updateDeliveryStatus(database_connect, dinfos[1], "delivered")
+                                   updateTruckStatus(database_connect, dinfos[3], "idle")
                           else:
-                              if ufinish.status=="arrive warehouse":
+                              if truckinfo[0][0]=="gopickup":
                                  wx=ufinish.x
                                  wy=ufinish.y
                                  winfo=get_warehouse_id(database_connect,wx,wy)
@@ -248,7 +310,9 @@ def handle_world_connections(database_connect,world_socket,amazon_socket):
                                  uatruckarrive.truckid=truck_id
                                  uatruckarrive.seqnum=request_amazon_seqnum
                                  uacommand.truckarrived.append(uatruckarrive)
+                                 updateTruckStatus(database_connect,truck_id,"arrive warehouse")
                  for delivermade in uResponseMessage.delivered:
+                              count+=1
                               ucommand.acks.append(delivermade.seqnum)
                               pid=delivermade.packageid
                               updateDeliveryStatus(database_connect,pid,"delivered")
@@ -265,6 +329,7 @@ def handle_world_connections(database_connect,world_socket,amazon_socket):
                               amazon_seq_lock.release()
                               uaorderdelivered.seqnum=request_amazon_seqnum
                               uacommand.orderdelivered.append(uaorderdelivered)
+                              #updateTruckStatus(database_connect, truck_id, "delivered")
                  for err in uResponseMessage.error:
                           ucommand.acks.append(err.seqnum)
                  pureack=False
@@ -276,14 +341,20 @@ def handle_world_connections(database_connect,world_socket,amazon_socket):
                      pureack=True
                  else:
                      pureack=False
-                 amazonThread=Thread(target=send_message_to_amazon_and_check_ack,args=(amazon_socket,uacommand,aseqnum,pureack))
-                 amazonThread.start()
+                 print("called send amazon!!!!!!!")
+                 if count>0:
+                    print("uuuuuuuuuuuuuuuuuuuuuuuuuuuuu")
+                    print(uacommand)
+                    amazonThread = Thread(target=send_message_to_amazon_and_check_ack, args=(amazon_socket, uacommand, aseqnum, pureack))
+                    amazonThread.start()
+                 print("called send amazon!!!!!!!")
                  #send ack number back to world
              except :
 
                   print("response error 2")
 def create_start_delivery(databaseconnect,order_id,truck_id,package_id,description):
     orderinfo=get_order(databaseconnect,order_id)
+    global request_world_seqnum
     for order in orderinfo:
         orderid=order[0]
         destx=order[2]
@@ -293,15 +364,17 @@ def create_start_delivery(databaseconnect,order_id,truck_id,package_id,descripti
         world_seq_lock.acquire()
         request_world_seqnum+=1
         world_seq_lock.release()
-        ugodeliver=protocol_buffer.to_UGoDeliver(truck_id,udeliverlocation,request_world_seqnum)
+        ugodeliver=protocol_buffer.to_UGoDeliver(truck_id,[udeliverlocation],request_world_seqnum)
         updateDeliveryStatus(databaseconnect,package_id,"delivering")
+        updateTruckStatus(databaseconnect,truck_id,"delivering")
         return ugodeliver
 def pickup(databaseconnect,aurequesttruck,world_socket):
     ugopickup=world_ups_pb2.UGoPickup()
-    ugopickup.whnum=aurequesttruck.whnum
+    ugopickup.whid=aurequesttruck.whnum
     pickedtruckid=0
     idletruck=0
-    for i in range(100):
+    global request_world_seqnum
+    for i in range(225):
         statusinfo=getTruckStatus(databaseconnect,i)
         if statusinfo[0][0]=="idle":
             pickedtruckid=i
@@ -309,7 +382,7 @@ def pickup(databaseconnect,aurequesttruck,world_socket):
             updateTruckStatus(databaseconnect,i,"gopickup")
             break
     if idletruck==0:
-         for j in range(100):
+         for j in range(225):
              statusinfo=getTruckStatus(databaseconnect,j)
              if statusinfo[0][0]=="arrive warehouse" or statusinfo[0][0]=="delivering":
                  pickedtruckid=j
@@ -329,11 +402,14 @@ def pickup(databaseconnect,aurequesttruck,world_socket):
     ugopickup.whid=aurequesttruck.whnum
     return ugopickup
 def handle_amazon_connections(database_connect,world_socket,amazon_socket):
+    print("called amazon handler!!!!")
     while True:
         message, exception = recv_msg(amazon_socket)
         print("message recieved :::"+str(message))
         global request_amazon_seqnum
         global request_world_seqnum
+        global world_id
+        global world_connected
         if exception:
             print("world connection error!!!!")
             break
@@ -343,31 +419,38 @@ def handle_amazon_connections(database_connect,world_socket,amazon_socket):
             ucommand=world_ups_pb2.UCommands()
             uaseqnum=[]
             wseqnum=[]
+            just_order_created=False
             try:
                 aucommand.ParseFromString(message)
                 print("aucommand is received")
                 print(type(aucommand))
                 print(aucommand)
-                print(aucommand.connectedtoworld)
-                for ctw in aucommand.connectedtoworld:
-                    print(ctw.worldid)
                 print("received aucommand is")
                 handle_amazon_ack(aucommand)
+                other=0
                 for thisorder in aucommand.ordercreated:
+                       other+=1
+                       just_order_created=True
                        print("enter for order create for loop")
                        upsaccount = ""
-                       if thisorder.HasField("upsaccount"):
+                       for upsaccount in thisorder.upsaccount:
                            upsaccount = thisorder.upsaccount
                        addOrder(database_connect, thisorder.orderid, thisorder.upsaccount,
                                 thisorder.destinationx, thisorder.destinationy)
+                       print("this order seqnum is: "+str(thisorder.seqnum))
                        uacommand.acks.append(thisorder.seqnum)
+                       print(uacommand.acks)
                 for requests in aucommand.requesttruck:
+                         other+=1
+                         just_order_created=False
                          ugopickup=pickup(database_connect, requests, world_socket)
                          ucommand.pickups.append(ugopickup)
                          wseqnum.append(ugopickup.seqnum)
                          uacommand.acks.append(requests.seqnum)
                          add_warehouse(database_connect,requests.x,requests.y,requests.whnum)
                 for loadedorder in aucommand.orderloaded:
+                        other+=1
+                        just_order_created=False
                         uacommand.acks.append(loadedorder.seqnum)
                         ugodeliver=create_start_delivery(database_connect,loadedorder.orderid,loadedorder.truckid,loadedorder.packageid,loadedorder.description)
                         amazon_seq_lock.acquire()
@@ -379,12 +462,16 @@ def handle_amazon_connections(database_connect,world_socket,amazon_socket):
                         wseqnum.append(ugodeliver.seqnum)
                         uacommand.orderdeparture.append(uaorderdeparture)
                 for worldinfo in aucommand.connectedtoworld:
+                         other+=1
+                         just_order_created=False
+                         print("received amazon!!!!!!!!!!!!!!!!")
                          world_id = worldinfo.worldid
                          global amazon_connect_world
                          amazon_connect_world = True
                          print("connect to world is called!!!!!!!!!!!!")
                          while world_connected == False:
-                             print("Please wait ups connect world!!!!!!")
+                             # print("Please wait ups connect world!!!!!!")
+                             i2=1
                          uaconnectedtoworld = amazon_ups_pb2.UAConnectedToWorld()
                          uaconnectedtoworld.worldid = world_id
                          amazon_seq_lock.acquire()
@@ -395,8 +482,12 @@ def handle_amazon_connections(database_connect,world_socket,amazon_socket):
                          uacommand.connectedtoworld.append(uaconnectedtoworld)
                          uacommand.acks.append(worldinfo.seqnum)
                 for err1 in aucommand.error:
+                        other+=1
                         uacommand.acks.append(err1.seqnum)
                 #send command to amazon
+                if other==0:
+                    print("other!!!!!!!!!")
+                    continue
                 print("come here")
                 print(uacommand.acks)
                 pureack=False
@@ -405,6 +496,9 @@ def handle_amazon_connections(database_connect,world_socket,amazon_socket):
                     pureack=True
                 print("uaseqnumn:"+str(uaseqnum))
                 print("here come!!!!!!!")
+                print(uacommand)
+                print("send command is: "+str(uacommand))
+                print("is pureack?"+str(pureack))
                 amazon_thread=Thread(target=send_message_to_amazon_and_check_ack,args=(amazon_socket,uacommand,uaseqnum,pureack))
                 amazon_thread.start()
                 print("amazon start successs!!!!")
@@ -413,8 +507,10 @@ def handle_amazon_connections(database_connect,world_socket,amazon_socket):
                 else:
                     pureack=False
                 print("wseqnumn:" + str(wseqnum))
-                worldThread=Thread(target=send_message_to_world_and_check_ack,args=(world_socket,ucommand,wseqnum,pureack))
-                worldThread.start()
+                if not just_order_created:
+                    worldThread = Thread(target=send_message_to_world_and_check_ack,
+                                         args=(world_socket, ucommand, wseqnum, pureack))
+                    worldThread.start()
             except ValueError:
               print("value error happended!!!")
               print("response error 1")
@@ -439,7 +535,7 @@ def connect_to_database():
 
     cur.execute('''CREATE TABLE IF NOT EXISTS DELIVERY(
                 DELIVERY_ID SERIAL,
-                PAKCAGE_ID INT PRIMARY KEY,
+                PACKAGE_ID INT PRIMARY KEY,
                 ORDER_ID INT, 
                 TRUCK_ID INT,
                 DEST_X INT,
@@ -461,6 +557,7 @@ def connect_to_database():
 amazon_ip="vcm-30760.vm.duke.edu" #可以随时更改
 amazon_port=8080  #可以随时更改
 world_socket=connect_world_socket()
+print("connect world success!!!!!!!!")
 front_ip="127.0.0.1"
 front_port=8080
 #front_socket=connect_frontend_socket(front_ip,front_port)
@@ -468,9 +565,8 @@ amazon_socket=connect_to_amazon(amazon_ip,amazon_port)
 print("connect success!!!!!!")
 database_connection1=connect_to_database()
 worldThread=Thread(target=handle_world_connections,args=(database_connection1,world_socket,amazon_socket))
-database_connection2=connect_to_database()
-
-amazonThread=Thread(target=handle_amazon_connections,args=(database_connection2,world_socket,amazon_socket))
+# database_connection2=connect_to_database()
+amazonThread=Thread(target=handle_amazon_connections,args=(database_connection1,world_socket,amazon_socket))
 # database_connection3=connect_to_database()
 #frontThread=Thread(target=connect_frontend_socket,args=(database_connection3,world_socket,amazon_socket,front_ip,front_port))
 worldThread.start()
@@ -480,4 +576,6 @@ worldThread.join()
 amazonThread.join()
 #frontThread.join()
 database_connection1.close()
-database_connection2.close()
+# database_connection2.close()
+#world_socket.close()
+#amazon_socket.close()

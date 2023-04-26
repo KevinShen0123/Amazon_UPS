@@ -14,27 +14,40 @@ import psycopg2
 import protocol_buffer
 
 def addTruck(connect, truckId, x, y, t_status):
-    cur = connect.cursor()
-    sql = "INSERT INTO TRUCK (TRUCK_ID, X, Y, T_STATUS) VALUES (" + str(truckId) +"," +str(x)+","+str(y)+",'"+t_status+"');"
-    print("addtruck: "+sql)
-    cur.execute(sql)
+    try:
+        cur = connect.cursor()
+        sql = "INSERT INTO TRUCK (TRUCK_ID, X, Y, T_STATUS) VALUES (" + str(truckId) + "," + str(x) + "," + str(
+            y) + ",'" + t_status + "');"
+        print("addtruck: " + sql)
+        cur.execute(sql)
+    except:
+        pass
     connect.commit()
     # connect.close()
 def addOrder(connect, orderId, upsaccount, dest_x, dest_y):
-    cur = connect.cursor()
-    sql = "INSERT INTO ORDERS (ORDER_ID, UPSACCOUNT, DEST_X, DEST_Y) VALUES (" + str(orderId) +",'" +upsaccount+"',"+str(dest_x)+","+str(dest_y)+");"
-    print("addorder: "+sql)
-    print("add order is called!!!")
-    cur.execute(sql)
+    try:
+        cur = connect.cursor()
+        sql = "INSERT INTO ORDERS (ORDER_ID, UPSACCOUNT, DEST_X, DEST_Y) VALUES (" + str(
+            orderId) + ",'" + upsaccount + "'," + str(dest_x) + "," + str(dest_y) + ");"
+        print("addorder: " + sql)
+        print("add order is called!!!")
+        cur.execute(sql)
+    except:
+        pass
     connect.commit()
     # connect.close()
 def addDelivery(connect, packageId, orderId, truckId, dest_x, dest_y, description, d_status):
-    cur = connect.cursor()
-    sql = "INSERT INTO DELIVERY (PACKAGE_ID, ORDER_ID, TRUCK_ID, DEST_X, DEST_Y, DESCRIPTION, D_STATUS) VALUES (" 
-    + str(packageId) + ","+ str(orderId) + ","+ str(truckId) + "," + str(dest_x) + "," + str(dest_y) + ",'"+description+"','"+ d_status +"');"
-    print("adddelivery: "+sql)
-    cur.execute(sql)
-    connect.commit()
+        cur = connect.cursor()
+        sql = "INSERT INTO DELIVERY (PACKAGE_ID, ORDER_ID, TRUCK_ID, DEST_X, DEST_Y, DESCR, D_STATUS) VALUES ("
+        sql+=str(packageId) + "," + str(orderId) + "," + str(truckId) + "," + str(dest_x) + "," + str(
+            dest_y) + ",'" + str(description) + "','" + str(d_status) + "');"
+        print("adddelivery: " + sql)
+        cur.execute(sql)
+        connect.commit()
+    # except:
+    #     print("exception happend!!!!!!!!")
+    #     pass
+        connect.commit()
     # connect.close()
 def updateTruckStatus(connect, truckId, status):
     cur = connect.cursor()
@@ -69,7 +82,7 @@ def updateDeliveryAddr(connect, packageId, dest_x, dest_y):
 # return incomplete delivery for the truck
 def getCurrDelivery(connect, truckId):
     cur = connect.cursor()
-    sql = "SELECT * FORM DELIVERY WHERE TRUCK_ID = "+str(truckId)+" AND D_STATUS <> "+"'deliveried';"
+    sql = "SELECT * FROM DELIVERY WHERE TRUCK_ID = "+str(truckId)+" AND D_STATUS <> "+"'deliveried';"
     print("selectDelivery: "+sql)
     cur.execute(sql)
     rows = cur.fetchall()
@@ -79,7 +92,7 @@ def getCurrDelivery(connect, truckId):
 # return truck status
 def getTruckStatus(connect, truckId):
     cur = connect.cursor()
-    sql = "SELECT T_STATUS FORM TRUCK WHERE TRUCK_ID = "+str(truckId)+";"
+    sql = "SELECT T_STATUS FROM TRUCK WHERE TRUCK_ID = "+str(truckId)+";"
     print("selectTruckStatus: "+sql)
     cur.execute(sql)
     rows = cur.fetchall()
@@ -87,25 +100,28 @@ def getTruckStatus(connect, truckId):
     return rows
 def get_order(connect,order_id):
     cur = connect.cursor()
-    sql = "SELECT * FORM ORDERS WHERE ORDER_ID = " + str(order_id) + ";"
+    sql = "SELECT * FROM ORDERS WHERE ORDER_ID = " + str(order_id) + ";"
     print("selectTruckStatus: " + sql)
     cur.execute(sql)
     rows = cur.fetchall()
     # connect.close()
     return rows
 def add_warehouse(connect,Xcor,Ycor,WHID):
-    xcorstr=str(Xcor)
-    cur = connect.cursor()
-    sql="INSERT INTO WAREHOUSE(X,Y,WHID) VALUES"
-    sql+="("
-    sql+=xcorstr
-    sql+=","
-    sql+=str(Ycor)
-    sql+=","
-    sql+=str(WHID)
-    sql+=")"
-    print("addwarehouse: "+sql)
-    cur.execute(sql)
+    try:
+        xcorstr = str(Xcor)
+        cur = connect.cursor()
+        sql = "INSERT INTO WAREHOUSE(X,Y,WHID) VALUES"
+        sql += "("
+        sql += xcorstr
+        sql += ","
+        sql += str(Ycor)
+        sql += ","
+        sql += str(WHID)
+        sql += ")"
+        print("addwarehouse: " + sql)
+        cur.execute(sql)
+    except:
+        pass
     connect.commit()
 def get_warehouse_id(connect, x,y):
     cur = connect.cursor()
@@ -120,7 +136,7 @@ def get_warehouse_id(connect, x,y):
     return rows
 def get_delivery(connect,packageid):
     cur = connect.cursor()
-    sql = "SELECT * FORM DELIVERY WHERE PACKAGE_ID = " + str(packageid) + " AND D_STATUS <> " + "'deliveried';"
+    sql = "SELECT * FROM DELIVERY WHERE PACKAGE_ID = " + str(packageid) + " AND D_STATUS <> " + "'deliveried';"
     print("selectDelivery: " + sql)
     cur.execute(sql)
     rows = cur.fetchall()
