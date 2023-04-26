@@ -12,7 +12,10 @@ from google.protobuf.internal.encoder import _EncodeVarint
 import amazon_ups_pb2
 import psycopg2
 import protocol_buffer
+<<<<<<< HEAD
 #from upsserver import database_connection
+=======
+>>>>>>> 463ae4cc876540bed1735f6f3ead51bddd8b3234
 
 def addTruck(connect, truckId, x, y, t_status):
     cur = connect.cursor()
@@ -26,6 +29,7 @@ def addOrder(connect, orderId, upsaccount, dest_x, dest_y):
     cur = connect.cursor()
     sql = "INSERT INTO ORDERS (ORDER_ID, UPSACCOUNT, DEST_X, DEST_Y) VALUES (" + str(orderId) +",'" +upsaccount+"',"+str(dest_x)+","+str(dest_y)+");"
     print("addorder: "+sql)
+    print("add order is called!!!")
     cur.execute(sql)
     connect.commit()
     # connect.close()
