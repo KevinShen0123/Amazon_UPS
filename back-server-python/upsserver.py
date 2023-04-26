@@ -26,6 +26,7 @@ world_id=1
 world_acked_num=[]
 amazon_acked_num=[]
 amazon_connect_world=False
+
 def recv_msg(socket_) -> str:
     var_int_buff = []
     while True:
@@ -47,6 +48,8 @@ def recv_msg(socket_) -> str:
 
 def send_message_to_world(socket,msg):
     string_msg = msg.SerializeToString()
+    print(string_msg) 
+
     world_socket_lock.acquire()
     _EncodeVarint(socket.send, len(string_msg), None)
     socket.send(string_msg)
@@ -54,6 +57,7 @@ def send_message_to_world(socket,msg):
 
 def send_message_to_amazon(socket,msg):
     string_msg = msg.SerializeToString()
+
     amazon_socket_lock.acquire()
     _EncodeVarint(socket.send, len(string_msg), None)
     socket.send(string_msg)
@@ -69,6 +73,7 @@ def send_message_to_world_and_check_ack(socket,msg,seqnum):#same as method below
         if all_acked == True:
             break
         send_message_to_world(socket, msg)
+
 def send_message_to_amazon_and_check_ack(socket,msg,seqnum):# method for continue send message until ack got, you can create a thread for the method
     # while amazon_acked_num.count(seqnum)==0:
     #     send_message_to_amazon(socket,msg)
@@ -81,6 +86,7 @@ def send_message_to_amazon_and_check_ack(socket,msg,seqnum):# method for continu
         if all_acked==True:
               break
         send_message_to_amazon(socket,msg)
+
 def handle_front_end(databaseconnection,socket_to_front,socket_to_world,socket_to_amazon):
      #update destination address
      while True:
@@ -106,6 +112,27 @@ def handle_front_end(databaseconnection,socket_to_front,socket_to_world,socket_t
              uacommand.destinationupdated.append(destinationupdated)
              amazonThread=Thread(target=send_message_to_amazon_and_check_ack,args=(amazon_socket,uacommand,uaseqnum))
              amazonThread.start()
+
+def connect_frontend_test(databaseconnection):
+    try:
+        print("dock to frontend")
+        ip_port_frontend = ('127.0.0.1', 8080)
+        s_to_frontend = socket.socket()
+        s_to_frontend.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s_to_frontend.bind(ip_port_frontend)
+        s_to_frontend.listen(5)
+        while True:
+            print("entering while")
+            frontend, _ = s_to_frontend.accept()
+            #t=Thread(target=handle_front_end,args=(databaseconnection,s_to_frontend,socket_to_world,socket_to_amz))
+            #t.start()
+            print("accepting")
+            f_msg, ex = recv_msg(frontend)
+            print("received")
+            print(f_msg)
+    except Exception as ex:
+        print(ex)          
+  
 def connect_frontend_socket(databaseconnection,socket_to_world,socket_to_amz, frontip,frontport):
     try:
         print("dock to frontend")
@@ -120,7 +147,9 @@ def connect_frontend_socket(databaseconnection,socket_to_world,socket_to_amz, fr
             t.start()
     except Exception as ex:
         print(ex)
+
 def connect_world_socket():
+    #world_host = 'vcm-30760.vm.duke.edu'
     world_host = '127.0.0.1'
     world_info = (world_host, 12345)
     socket_to_world = socket.socket()
@@ -136,13 +165,15 @@ def connect_world_socket():
 
 def uconnect_world(uconnectmessage,world_socket):
     send_message_to_world(world_socket, uconnectmessage)
+    # receive uconnected from world
     message, noexception = recv_msg(world_socket)
     uconnected=world_ups_pb2.UConnected()
+    print(message)
     try:
         uconnected.ParseFromString(message)
         return uconnected
     except:
-         print("connect world error!!!!")
+         print("Error: receiving UConnected error")
          sys.exit(1)
 
 def connect_to_amazon(ip,port):
@@ -180,8 +211,10 @@ def handle_world_connections(database_connect,world_socket,amazon_socket):
    global request_world_seqnum
    global request_amazon_seqnum
    global amazon_connect_world
+   global world_id
    while amazon_connect_world is False:
-         print("Please wait amazon to connect world")
+         #print("Please wait amazon to connect world")
+         pass
    uconnectmessage=world_ups_pb2.UConnect()
    uconnectmessage.worldid=world_id
    uconnectmessage.isAmazon=False
@@ -199,6 +232,7 @@ def handle_world_connections(database_connect,world_socket,amazon_socket):
    world_connected=True
    while True:
          message,noexception=recv_msg(world_socket)
+         print(message)
          if not noexception:
              print("world connection error!!!!")
              break
@@ -210,6 +244,7 @@ def handle_world_connections(database_connect,world_socket,amazon_socket):
              aseqnum=[]
              try:
                  uResponseMessage.ParseFromString(message)
+                 print("===="+uResponseMessage)
                  handle_world_ack(uResponseMessage)
                  if uResponseMessage.HasField("completions"):
                     for ufinish in uResponseMessage.completions:
@@ -219,11 +254,13 @@ def handle_world_connections(database_connect,world_socket,amazon_socket):
                                updateDeliveryStatus(database_connect,dinfo[1],"delivered")
                                updateTruckStatus(database_connect,dinfo[3],"idle")
                           else:
-                              if ufinish.status=="arrive warehouse":
+                            print(ufinish.status)
+                            if ufinish.status=="arrive warehouse":
                                  wx=ufinish.x
                                  wy=ufinish.y
                                  winfo=get_warehouse_id(database_connect,wx,wy)
                                  wid=winfo[0][0]
+                                 print("wid", wid)
                                  truck_id=ufinish.truckid
                                  amazon_seq_lock.acquire()
                                  request_amazon_seqnum+=1
@@ -261,8 +298,10 @@ def handle_world_connections(database_connect,world_socket,amazon_socket):
                  amazonThread=Thread(target=send_message_to_amazon_and_check_ack,args=(amazon_socket,uacommand,aseqnum))
                  amazonThread.start()
                  #send ack number back to world
+                 print("receiving from world ....")
              except:
                   print("response error")
+    
 def create_start_delivery(databaseconnect,order_id,truck_id,package_id,description):
     orderinfo=get_order(databaseconnect,order_id)
     for order in orderinfo:
@@ -277,6 +316,7 @@ def create_start_delivery(databaseconnect,order_id,truck_id,package_id,descripti
         ugodeliver=protocol_buffer.to_UGoDeliver(truck_id,udeliverlocation,request_world_seqnum)
         updateDeliveryStatus(databaseconnect,package_id,"delivering")
         return ugodeliver
+
 def pickup(databaseconnect,aurequesttruck,world_socket):
     ugopickup=world_ups_pb2.UGoPickup()
     ugopickup.whnum=aurequesttruck.whnum
@@ -309,6 +349,7 @@ def pickup(databaseconnect,aurequesttruck,world_socket):
     world_seq_lock.release()
     ugopickup.whid=aurequesttruck.whnum
     return ugopickup
+
 def handle_amazon_connections(database_connect,world_socket,amazon_socket):
     while True:
         message, noexception = recv_msg(amazon_socket)
@@ -322,17 +363,21 @@ def handle_amazon_connections(database_connect,world_socket,amazon_socket):
             uaseqnum=[]
             wseqnum=[]
             try:
+                print("amazon msg: ", message)
                 aucommand.ParseFromString(message)
                 handle_amazon_ack(aucommand)
                 if aucommand.HasField("ordercreated"):
-                   for thisorder in aucommand.ordercreated:
+                    print("ordercre")
+                    for thisorder in aucommand.ordercreated:
                        upsaccount = ""
                        if thisorder.HasField("upsaccount"):
                            upsaccount = thisorder.upsaccount
                        addOrder(database_connect, thisorder.orderid, thisorder.upsaccount,
                                 thisorder.destinationx, thisorder.destinationy)
                        uacommand.acks.append(thisorder.seqnum)
+                    
                 if aucommand.HasField("requesttruck"):
+                     print("reqquest")
                      for requests in aucommand.requesttruck:
                          ugopickup=pickup(database_connect, requests, world_socket)
                          ucommand.pickups.append(ugopickup)
@@ -340,6 +385,7 @@ def handle_amazon_connections(database_connect,world_socket,amazon_socket):
                          uacommand.acks.append(requests.seqnum)
                          add_warehouse(database_connect,requests.x,requests.y,requests.whnum)
                 if aucommand.HasField("orderloaded"):
+                    print("order loaded")
                     #call create Delivery and start Delivery, send order departure
                     for loadedorder in aucommand.orderloaded:
                         uacommand.acks.append(loadedorder.seqnum)
@@ -353,6 +399,7 @@ def handle_amazon_connections(database_connect,world_socket,amazon_socket):
                         wseqnum.append(ugodeliver.seqnum)
                         uacommand.orderdeparture.append(uaorderdeparture)
                 if aucommand.HasField("connectedtoworld"):
+                     print("connect to world")
                      for worldinfo in aucommand.connectedtoworld:
                          world_id = worldinfo.worldid
                          amazon_connect_world = True
@@ -368,6 +415,7 @@ def handle_amazon_connections(database_connect,world_socket,amazon_socket):
                          uacommand.connectedtoworld.append(uaconnectedtoworld)
                          uacommand.acks.append(world_id.seqnum)
                 if aucommand.HasField("error"):
+                    print("error")
                     for err1 in aucommand.error:
                         uacommand.acks.append(err1.seqnum)
                 #send command to amazon
@@ -377,6 +425,7 @@ def handle_amazon_connections(database_connect,world_socket,amazon_socket):
                 worldThread.start()
             except:
               print("response error")
+
 def connect_to_database():
     connect=psycopg2.connect(host="127.0.0.1",database="mini_ups",user="postgres",password="passw0rd")
     cur = connect.cursor()
@@ -417,27 +466,43 @@ def connect_to_database():
     # connect.close()
     return connect
 
-amazon_ip="" #可以随时更改
-amazon_port=5555  #可以随时更改
+amazon_ip="vcm-30760.vm.duke.edu" #可以随时更改
+amazon_port=8080  #可以随时更改
 world_socket=connect_world_socket()
+uconnectmessage=world_ups_pb2.UConnect()
+uconnectmessage.worldid=world_id
+uconnectmessage.isAmazon=False
+truckid=0
+database_connection1=connect_to_database()
+for i in range(10):
+        for j in range(10):
+            uinittruck=protocol_buffer.to_UInitTruck(truckid,i,j)
+            uconnectmessage.trucks.append(uinittruck)
+            addTruck(database_connection1,truckid,i,j,"idle")
+            truckid=truckid+1
+ud=uconnect_world(uconnectmessage,world_socket)
+
 front_ip="127.0.0.1"
 front_port=8080
-front_socket=connect_frontend_socket(front_ip,front_port)
-amazon_socket=connect_to_amazon(amazon_ip,amazon_port)
-database_connection1=connect_to_database()
+#front_socket=connect_frontend_socket(front_ip,front_port)
+#amazon_socket=connect_to_amazon(amazon_ip,amazon_port)
 
-worldThread=Thread(target=handle_world_connections,args=(database_connection1,world_socket,amazon_socket))
-database_connection2=connect_to_database()
+# connect_frontend_test(database_connection1)
+#database_connection1=connect_to_database()
+#handle_world_connections(database_connection1, world_socket, amazon_socket)
+# worldThread=Thread(target=handle_world_connections,args=(database_connection1,world_socket,amazon_socket))
 
-amazonThread=Thread(target=handle_amazon_connections,args=(database_connection2,world_socket,amazon_socket))
-database_connection3=connect_to_database()
-frontThread=Thread(target=connect_frontend_socket,args=(database_connection3,world_socket,amazon_socket,front_ip,front_port))
-worldThread.start()
-amazonThread.start()
-frontThread.start()
-worldThread.join()
-amazonThread.join()
-frontThread.join()
-database_connection1.close()
-database_connection2.close()
-database_connection3.close()
+# database_connection2=connect_to_database()
+# #frontThread=Thread(target=connect_frontend_test,args=(database_connection1))
+# amazonThread=Thread(target=handle_amazon_connections,args=(database_connection2,world_socket,amazon_socket))
+# database_connection3=connect_to_database()
+# #frontThread=Thread(target=connect_frontend_socket,args=(database_connection3,world_socket,amazon_socket,front_ip,front_port))
+# worldThread.start()
+# amazonThread.start()
+# #frontThread.start()
+# worldThread.join()
+# amazonThread.join()
+# #frontThread.join()
+# database_connection1.close()
+# database_connection2.close()
+# database_connection3.close()

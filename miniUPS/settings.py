@@ -80,7 +80,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'mini_ups',
         'USER': 'postgres',
-        'PASSWORD': '20230101',
+        'PASSWORD': 'passw0rd',
         'HOST': '',
         'PORT': '5432',
     }
