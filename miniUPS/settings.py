@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-&to(3pvw(mokhbcszp)*a)o1k+%6ls^l)tem)xd$3up%kzlyiy
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1']
+ALLOWED_HOSTS = ['127.0.0.1','vcm-33165.vm.duke.edu']
 
 
 # Application definition
@@ -80,7 +80,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'mini_ups',
         'USER': 'postgres',
-        'PASSWORD': 'passw0rd',
+        'PASSWORD': '20230101',
         'HOST': '',
         'PORT': '5432',
     }
