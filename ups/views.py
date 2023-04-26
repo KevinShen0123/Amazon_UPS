@@ -18,6 +18,9 @@ from django.core.mail import EmailMessage
 from django.conf import settings
 from django.urls import reverse
 from django.shortcuts import redirect
+from django.core.mail import send_mail
+from django.core.mail import EmailMessage
+
 
 
 # Create your views here.
@@ -107,6 +110,36 @@ def search(request):
             context['error_message'] = f"No package found with tracking number {query}."
     return render(request, 'main.html', context)
 
+@login_required
+def userinfo(request):
+    context = {
+        'user': request.user
+    }
+    return render(request,'userinfo.html', context)
+
+@login_required
+def useredit(request, userID):
+    if request.method =="POST":
+        firstname = request.POST.get('firstname')
+        lastname = request.POST.get('lastname')
+        email = request.POST.get('email')
+        
+        user = get_object_or_404(User, id=userID)
+        user.first_name = firstname
+        user.last_name = lastname
+        user.email = email
+        user.save()
+        return HttpResponseRedirect('/userinfo/')
+    else:
+        user = get_object_or_404(User, id=request.user.id)
+        user = request.user
+        context = {
+            'user': user
+        }
+        return render(request,'useredit.html', context)
+
+    return render(request, 'useredit.html')
+
 def addrUpdate(request, pack_id):
     if request.method =="POST":
         dest_x = request.POST.get('dest_x')
@@ -129,6 +162,7 @@ def addrUpdate(request, pack_id):
             socket_to_backend.connect(backend_info)
             socket_to_backend.send(msg.encode('utf-8'))
             print(msg)
+            send_mail('Delivery Address Update', 'You delivery address has updated.', settings.EMAIL_HOST_USER, request.user.email, fail_silently=False)
         except :
             error_message = 'lost connection to server!'
             print(error_message)
