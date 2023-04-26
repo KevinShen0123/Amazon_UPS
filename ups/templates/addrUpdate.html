@@ -6,7 +6,7 @@
     <meta name="description" content="">
     <meta name="author" content="Mark Otto, Jacob Thornton, and Bootstrap contributors">
     <meta name="generator" content="Hugo 0.108.0">
-    <title>Package Detail</title>
+    <title>Update Delivery Address</title>
     <!--
       <link rel="canonical" href="https://getbootstrap.com/docs/5.3/examples/sign-in/">
     -->
@@ -93,8 +93,9 @@
 <main>
   <div class="row g-5">
     <div class="col-md-7 col-lg-8">      
-		<h4 class="mb-3">Package Detail</h4>
-
+		<h4 class="mb-3">Update Delivery Address</h4>
+        <form action="{% url 'addrUpdate' package.package_id %}" method="post" needs-validation novalidate>
+        {% csrf_token %}
         <div class="row g-3">
           <div class="col-sm-6">
             <div class="form-label-signup">
@@ -117,48 +118,23 @@
             <div class="form-label-signup">
               <label for="maxPassenger" class="form-label">Destination X</label>
             </div>
-            <div class="input-group has-validation">
-                <div class="form-control">{{ package.dest_x }}</div>
-            </div>
+            <input type="text" class="form-control" name="dest_x" value="{{package.dest_x}}" required>
           </div>
 
           <div class="col-sm-6">
             <div class="form-label-signup">
               <label for="specialInfo" class="form-label">Destination Y</label>
             </div>
-            <div class="input-group has-validation">
-                <div class="form-control">{{ package.dest_y }}</div>
-            </div>
+            <input type="text" class="form-control" name="dest_y" value="{{package.dest_y}}" required>
           </div>
 
-          <div class="col-sm-6">
-            <div class="form-label-signup">
-              <label for="specialInfo" class="form-label">Description</label>
-            </div>
-            <div class="input-group has-validation">
-                <div class="form-control">{{ package.descr }}</div>
-            </div>
-          </div>
 
           <div class="col-sm-6">
-            <div class="form-label-signup">
-              <label for="specialInfo" class="form-label">Status</label>
-            </div>
-            <div class="input-group has-validation">
-                <div class="form-control">{{ package.d_status }}</div>
-            </div>
-          </div>
-
-          <div class="col-sm-6">
-            <div class="">
-              <button type="button" class="btn btn-outline-primary me-2"><a href="{% url 'addrUpdate' package.package_id %}">Update Delivery Address</a></button>
-            </div>
-            <div class=" text-end">
-      
-            </div>
+            <input class="btn-signup btn btn-primary btn-lg" type="submit" value="Update">
           </div>
 
         </div>
+        </form>
     </div>
   </div>
 </main>

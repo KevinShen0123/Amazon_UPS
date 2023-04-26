@@ -10,7 +10,7 @@ class Truck(models.Model):
     x = models.IntegerField()
     y = models.IntegerField()
     STATUS = Choices('idle', 'go pickup', 'arrive wharehouse', 'delivering', 'delivered') 
-    status = StatusField()
+    t_status = StatusField()
     def __str__(self):
         return self.id + ", status: " + self.status
 
@@ -32,15 +32,15 @@ class Order(models.Model):
         db_table = 'orders' 
 
 class Delivery(models.Model):
-    
     package_id = models.IntegerField(primary_key=True)
-    order_id = models.ForeignKey(Order, on_delete=models.CASCADE)
-    truck_id = models.ForeignKey(Truck, on_delete=models.CASCADE)
+    # can access all the deliveries own by the order by order.deliveries.all()
+    order = models.ForeignKey(Order, related_name='deliveries', on_delete=models.CASCADE) 
+    truck = models.ForeignKey(Truck, on_delete=models.CASCADE)
     dest_x = models.IntegerField()
     dest_y = models.IntegerField()
-    description = models.CharField(max_length=300)
+    descr = models.CharField(max_length=300)
     STATUS = Choices('ready', 'delivering', 'delivered') 
-    status = StatusField()
+    d_status = StatusField()
     
     def __str__(self):
         return self.id + ", status: " + self.status

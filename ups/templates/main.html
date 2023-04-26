@@ -89,10 +89,11 @@
       <div class="col-lg-6 mx-auto">
         <!--<img src="/static/bootstrap/icons/main.jpg" alt="Take your ride" width=80% height=60%>-->
           <h4>Welcome to our mini UPS website!</h4>
+          <!--
           <div class="col-md-3 text-end">
             <button type="button" class="btn btn-outline-primary me-2"><a href="{% url 'connect_backend' %}">Connect to BackEnd</a></button>
           </div>
-          
+        -->
         </p>
       </div>
     </div>
@@ -104,7 +105,7 @@
 	<div class="py-5 container">
     <form method="GET" action="{% url 'search' %}">
       <div class="input-group mb-3">
-        <input type="text" class="form-control" placeholder="Enter tracking number" name="q">
+        <input type="text" class="form-control" placeholder="Enter tracking number" name="pack_search">
         <button class="btn btn-primary" type="submit">Search</button>
       </div>
     </form> 
@@ -112,9 +113,9 @@
         <h2>Search Results</h2>
         <p>Package details:</p>
         <ul>
-            <li>Tracking Number: {{ package.tracking_number }}</li>
-            <li>Sender: {{ package.sender }}</li>
-            <li>Recipient: {{ package.recipient }}</li>
+            <li>Tracking Number: {{ package.package_id }}</li>
+            <li>Order Id: {{ package.order_id }}</li>
+            <li>Status: {{ package.d_status }}</li>
             <!-- ... more package details ... -->
         </ul>
     {% elif error_message %}
@@ -130,19 +131,19 @@
 					<tr>
 						<th scope="col">#</th>
 						<th scope="col">Track Number</th>
-						<th scope="col">Ship Date</th>
-						<th scope="col">Estimated Arrival Date</th>
+						<th scope="col">Order Number</th>
+						<th scope="col">Status</th>
+            <th scope="col">Detail</th>
 					</tr>
 				</thead>
 				<tbody> 
           {% for pack in packageList %}
           <tr>
             <td>{{ forloop.counter }}</td> 
-						<td>test</td>
-						<td>test</td>
-						<td>test</td>
-			
-            <td><a href="{% url 'packageDetail' pack.id %}">detail</a></td>
+						<td>{{pack.package_id}}</td>
+						<td>{{pack.order_id}}</td>
+						<td>{{pack.d_status}}</td>
+            <td><a href="{% url 'packageDetail' pack.package_id %}">Detail</a></td>
           </tr>
           {% endfor %}	
 				</tbody>

@@ -154,4 +154,3 @@ def connect_to_database():
     return connect
 db=connect_to_database()
 addDelivery(db,1,1,1,1,1,1,1)
-

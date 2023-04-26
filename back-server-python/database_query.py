@@ -12,6 +12,7 @@ from google.protobuf.internal.encoder import _EncodeVarint
 import amazon_ups_pb2
 import psycopg2
 import protocol_buffer
+#from upsserver import database_connection
 
 def addTruck(connect, truckId, x, y, t_status):
     try:
@@ -24,6 +25,7 @@ def addTruck(connect, truckId, x, y, t_status):
         pass
     connect.commit()
     # connect.close()
+
 def addOrder(connect, orderId, upsaccount, dest_x, dest_y):
     try:
         cur = connect.cursor()
