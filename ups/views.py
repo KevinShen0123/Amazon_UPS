@@ -110,7 +110,15 @@ def search(request):
 def addrUpdate(request, pack_id):
     if request.method =="POST":
         dest_x = request.POST.get('dest_x')
-        dest_y = request.POST.get('dext_y')
+        dest_y = request.POST.get('dest_y')
+        
+        delivery = get_object_or_404(Delivery, package_id=pack_id)
+        if dest_x is not None:  
+            delivery.dest_x = dest_x
+        if dest_y is not None:  
+            delivery.dest_y = dest_y
+        delivery.save()
+
         msg = str(pack_id)+","+str(dest_x)+","+str(dest_y)
         print("connecting to backend, sending: ", msg)
         try:
