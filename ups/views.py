@@ -18,9 +18,6 @@ from django.core.mail import EmailMessage
 from django.conf import settings
 from django.urls import reverse
 from django.shortcuts import redirect
-from django.core.mail import send_mail
-from django.core.mail import EmailMessage
-
 
 
 # Create your views here.
@@ -89,7 +86,7 @@ def packageDetail(request, pack_id):
     context = {
         'package' : package
     }  
-    return render(request, 'packagedetail.html', context)
+    return render(request, 'packageDetail.html', context)
 
 def search(request):
     query = request.GET.get('pack_search')
@@ -152,6 +149,8 @@ def addrUpdate(request, pack_id):
             delivery.dest_y = dest_y
         delivery.save()
 
+        print("sending email", request.user.email)
+        send_mail('Delivery Address Update', 'You delivery address has updated.', settings.EMAIL_HOST_USER, [request.user.email], fail_silently=False)
         msg = str(pack_id)+","+str(dest_x)+","+str(dest_y)
         print("connecting to backend, sending: ", msg)
         try:
@@ -161,8 +160,6 @@ def addrUpdate(request, pack_id):
 
             socket_to_backend.connect(backend_info)
             socket_to_backend.send(msg.encode('utf-8'))
-            print(msg)
-            send_mail('Delivery Address Update', 'You delivery address has updated.', settings.EMAIL_HOST_USER, request.user.email, fail_silently=False)
         except :
             error_message = 'lost connection to server!'
             print(error_message)

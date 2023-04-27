@@ -6,7 +6,7 @@ from model_utils import Choices
 # Create your models here.
 
 class Truck(models.Model):
-
+    truck_id = models.IntegerField()
     x = models.IntegerField()
     y = models.IntegerField()
     STATUS = Choices('idle', 'go pickup', 'arrive wharehouse', 'delivering', 'delivered') 
