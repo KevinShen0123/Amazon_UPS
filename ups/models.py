@@ -12,7 +12,7 @@ class Truck(models.Model):
     STATUS = Choices('idle', 'go pickup', 'arrive wharehouse', 'delivering', 'delivered') 
     t_status = StatusField()
     def __str__(self):
-        return self.id + ", status: " + self.status
+        return ", status: " + self.t_status
 
     class Meta:
         managed = False
@@ -25,7 +25,7 @@ class Order(models.Model):
     dest_x = models.IntegerField()
     dest_y = models.IntegerField()
     def __str__(self):
-        return self.id + ", dest_x: " + self.dest_x + ", dest_y: " + self.dest_y
+        return self.order_id + ", dest_x: " + self.dest_x + ", dest_y: " + self.dest_y
     
     class Meta:
         managed = False
@@ -43,7 +43,7 @@ class Delivery(models.Model):
     d_status = StatusField()
     
     def __str__(self):
-        return self.id + ", status: " + self.status
+        return self.package_id + ", status: " + self.d_status
 
     class Meta:
         managed = False

@@ -86,7 +86,7 @@ def packageDetail(request, pack_id):
     context = {
         'package' : package
     }  
-    return render(request, 'packagedetail.html', context)
+    return render(request, 'packageDetail.html', context)
 
 def search(request):
     query = request.GET.get('pack_search')
