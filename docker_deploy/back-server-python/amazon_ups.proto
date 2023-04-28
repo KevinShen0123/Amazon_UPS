@@ -1,0 +1,86 @@
+syntax = "proto2";
+message AUConnectedToWorld {
+  required int64 worldid = 1;
+  required int64 seqnum = 2;
+}
+
+message UAConnectedToWorld {
+  required int64 worldid = 1;
+  required int64 seqnum = 2;
+}
+
+message AUOrderCreated {
+  required int32 orderid = 1;
+  required int32 destinationx = 2;
+  required int32 destinationy = 3;
+  optional string upsaccount = 4; 
+  required int64 seqnum = 5;
+}
+
+message UADestinationUpdated {
+  required int32 orderid = 1;
+  required int32 destinationx = 2;
+  required int32 destinationy = 3;
+  required int64 seqnum = 4;
+}
+
+message AURequestTruck { 
+  required int32 whnum = 1;
+  required int32 x = 2;
+  required int32 y = 3;
+  required int64 seqnum = 4;
+}
+
+message UATruckArrived {
+  required int32 truckid = 1;
+  required int32 whnum = 2;
+  required int64 seqnum = 3;
+}
+
+message AUOrderLoaded {
+  required int32 orderid = 1;
+  required int32 truckid = 2;
+  required int64 packageid = 3;
+  required string description = 4;
+  required int64 seqnum = 5;
+}
+
+message UAOrderDeparture {
+  required int32 orderid = 1;
+  required int64 packageid = 2;
+  required int64 trackingnum = 3;
+  required int64 seqnum = 4;
+}
+
+message UAOrderDelivered {
+  required int64 packageid = 1;
+  required int32 destinationx = 2;
+  required int32 destinationy = 3;
+  required int64 seqnum = 4;
+}
+
+message Err {
+  required string err = 1;
+  required int64 originseqnum = 2;
+  required int64 seqnum = 3;
+}
+
+message AUCommands {
+  repeated AUConnectedToWorld connectedtoworld = 1;
+  repeated AUOrderCreated ordercreated = 2;
+  repeated AURequestTruck requesttruck = 3;
+  repeated AUOrderLoaded orderloaded = 4; 
+  repeated int64 acks = 5;
+  repeated Err error = 6;
+}
+
+message UACommands {
+  repeated UAConnectedToWorld connectedtoworld = 1;
+  repeated UADestinationUpdated destinationupdated = 2;
+  repeated UATruckArrived truckarrived = 3;
+  repeated UAOrderDeparture orderdeparture = 4;
+  repeated UAOrderDelivered orderdelivered = 5;
+  repeated int64 acks = 6;
+  repeated Err error = 7;
+}
+
