@@ -26,7 +26,6 @@ world_id=1
 world_acked_num=[]
 amazon_acked_num=[]
 amazon_connect_world=False
-
 def recv_msg(socket_) -> str:
     var_int_buff = []
     while True:
@@ -76,6 +75,9 @@ def send_message_to_world_and_check_ack(socket,msg,seqnum,pure_ack):#same as met
             send_message_to_world(socket, msg)
             break
         for seqnums in seqnum:
+            print("world acked num is:::::")
+            print(world_acked_num)
+            print("world acked num here::::::")
             if world_acked_num.count(seqnums)==0:
                 all_acked = False
                 break
@@ -246,8 +248,8 @@ def handle_world_connections(database_connect,world_socket,amazon_socket):
    uconnectmessage.worldid=world_id
    uconnectmessage.isAmazon=False
    truckid=0
-   for i in range(15):
-        for j in range(15):
+   for i in range(20):
+        for j in range(20):
             uinittruck=protocol_buffer.to_UInitTruck(truckid,i,j)
             uconnectmessage.trucks.append(uinittruck)
             addTruck(database_connect,truckid,i,j,"idle")
@@ -263,89 +265,94 @@ def handle_world_connections(database_connect,world_socket,amazon_socket):
          message,noexception=recv_msg(world_socket)
          if noexception:
              print("world connection error!!!!")
-             break
+             continue
          else:
-             uResponseMessage=world_ups_pb2.UResponses()
-             ucommand=world_ups_pb2.UCommands()
-             uacommand=amazon_ups_pb2.UACommands()
-             print("recieve from the world")
-             print(uResponseMessage)
-             print("receive from the world")
-             wseqnum=[] # the seqnum that need check ack for world
-             aseqnum=[] # the seqnum that need check ack for amazon
-             if 1==1:
-                 uResponseMessage.ParseFromString(message)
-                 print("message is:::::")
-                 print(uResponseMessage)
-                 print("message that::::::")
-                 handle_world_ack(uResponseMessage)
-                 count=0
-                 for ufinish in uResponseMessage.completions:
-                          count+=1
-                          ucommand.acks.append(ufinish.seqnum)
-                          truckinfo=getTruckStatus(database_connect,ufinish.truckid)
-                          print("truck info is:"+str(truckinfo))
-                          if truckinfo[0][0]=="delivering":
-                               dinfo=getCurrDelivery(database_connect,ufinish.truckid)
-                               for dinfos in dinfo:
-                                   updateDeliveryStatus(database_connect, dinfos[1], "delivered")
-                                   updateTruckStatus(database_connect, dinfos[3], "idle")
-                          else:
-                              if truckinfo[0][0]=="gopickup":
-                                 wx=ufinish.x
-                                 wy=ufinish.y
-                                 winfo=get_warehouse_id(database_connect,wx,wy)
-                                 wid=winfo[0][0]
-                                 print("wid"+str(wid))
-                                 truck_id=ufinish.truckid
-                                 amazon_seq_lock.acquire()
-                                 request_amazon_seqnum+=1
-                                 aseqnum.append(request_amazon_seqnum)
-                                 amazon_seq_lock.release()
-                                 uatruckarrive=amazon_ups_pb2.UATruckArrived()
-                                 uatruckarrive.whnum=wid
-                                 uatruckarrive.truckid=truck_id
-                                 uatruckarrive.seqnum=request_amazon_seqnum
-                                 uacommand.truckarrived.append(uatruckarrive)
-                                 updateTruckStatus(database_connect,truck_id,"arrive warehouse")
-                 for delivermade in uResponseMessage.delivered:
-                              count+=1
-                              ucommand.acks.append(delivermade.seqnum)
-                              pid=delivermade.packageid
-                              updateDeliveryStatus(database_connect,pid,"delivered")
-                              dinfo=get_delivery(database_connect,pid)
-                              destx=dinfo[0][4]
-                              desty=dinfo[0][5]
-                              uaorderdelivered=amazon_ups_pb2.UAOrderDelivered()
-                              uaorderdelivered.packageid=pid
-                              uaorderdelivered.destinationx=destx
-                              uaorderdelivered.destinationy=desty
-                              amazon_seq_lock.acquire()
-                              request_amazon_seqnum+=1
-                              aseqnum.append(request_amazon_seqnum)
-                              amazon_seq_lock.release()
-                              uaorderdelivered.seqnum=request_amazon_seqnum
-                              uacommand.orderdelivered.append(uaorderdelivered)
-                              #updateTruckStatus(database_connect, truck_id, "delivered")
-                 for err in uResponseMessage.error:
-                          ucommand.acks.append(err.seqnum)
-                 pureack=False
-                 if len(wseqnum)==0:
-                     pureack=True
-                 if count==0:
-                    continue
-                 worldthread=Thread(target=send_message_to_world_and_check_ack,args=(world_socket,ucommand,wseqnum,pureack))
-                 worldthread.start()
-                 if len(aseqnum)==0:
-                     pureack=True
-                 else:
-                     pureack=False
-                 if count>0:
-                    print("uuuuuuuuuuuuuuuuuuuuuuuuuuuuu")
-                    print(uacommand)
-                    amazonThread = Thread(target=send_message_to_amazon_and_check_ack, args=(amazon_socket, uacommand, aseqnum, pureack))
-                    amazonThread.start()
-                 #send ack number back to world
+            try:
+                uResponseMessage = world_ups_pb2.UResponses()
+                ucommand = world_ups_pb2.UCommands()
+                uacommand = amazon_ups_pb2.UACommands()
+                print("recieve from the world")
+                print(uResponseMessage)
+                print("receive from the world")
+                wseqnum = []  # the seqnum that need check ack for world
+                aseqnum = []  # the seqnum that need check ack for amazon
+                if 1 == 1:
+                    uResponseMessage.ParseFromString(message)
+                    print("message is:::::")
+                    print(uResponseMessage)
+                    print("message that::::::")
+                    handle_world_ack(uResponseMessage)
+                    count = 0
+                    for ufinish in uResponseMessage.completions:
+                        count += 1
+                        ucommand.acks.append(ufinish.seqnum)
+                        truckinfo = getTruckStatus(database_connect, ufinish.truckid)
+                        print("truck info is:" + str(truckinfo))
+                        if truckinfo[0][0] == "delivering":
+                            dinfo = getCurrDelivery(database_connect, ufinish.truckid)
+                            for dinfos in dinfo:
+                                updateDeliveryStatus(database_connect, dinfos[1], "delivered")
+                                updateTruckStatus(database_connect, dinfos[3], "idle")
+                        else:
+                            if truckinfo[0][0] == "gopickup":
+                                wx = ufinish.x
+                                wy = ufinish.y
+                                winfo = get_warehouse_id(database_connect, wx, wy)
+                                wid = winfo[0][0]
+                                print("wid" + str(wid))
+                                truck_id = ufinish.truckid
+                                amazon_seq_lock.acquire()
+                                request_amazon_seqnum += 1
+                                aseqnum.append(request_amazon_seqnum)
+                                amazon_seq_lock.release()
+                                uatruckarrive = amazon_ups_pb2.UATruckArrived()
+                                uatruckarrive.whnum = wid
+                                uatruckarrive.truckid = truck_id
+                                uatruckarrive.seqnum = request_amazon_seqnum
+                                uacommand.truckarrived.append(uatruckarrive)
+                                updateTruckStatus(database_connect, truck_id, "arrive warehouse")
+                    for delivermade in uResponseMessage.delivered:
+                        count += 1
+                        ucommand.acks.append(delivermade.seqnum)
+                        pid = delivermade.packageid
+                        updateDeliveryStatus(database_connect, pid, "delivered")
+                        dinfo = get_delivery(database_connect, pid)
+                        destx = dinfo[0][4]
+                        desty = dinfo[0][5]
+                        uaorderdelivered = amazon_ups_pb2.UAOrderDelivered()
+                        uaorderdelivered.packageid = pid
+                        uaorderdelivered.destinationx = destx
+                        uaorderdelivered.destinationy = desty
+                        amazon_seq_lock.acquire()
+                        request_amazon_seqnum += 1
+                        aseqnum.append(request_amazon_seqnum)
+                        amazon_seq_lock.release()
+                        uaorderdelivered.seqnum = request_amazon_seqnum
+                        uacommand.orderdelivered.append(uaorderdelivered)
+                        # updateTruckStatus(database_connect, truck_id, "delivered")
+                    for err in uResponseMessage.error:
+                        ucommand.acks.append(err.seqnum)
+                    pureack = False
+                    if len(wseqnum) == 0:
+                        pureack = True
+                    if count == 0:
+                        continue
+                    worldthread = Thread(target=send_message_to_world_and_check_ack,
+                                         args=(world_socket, ucommand, wseqnum, pureack))
+                    worldthread.start()
+                    if len(aseqnum) == 0:
+                        pureack = True
+                    else:
+                        pureack = False
+                    if count > 0:
+                        print("uuuuuuuuuuuuuuuuuuuuuuuuuuuuu")
+                        print(uacommand)
+                        amazonThread = Thread(target=send_message_to_amazon_and_check_ack,
+                                              args=(amazon_socket, uacommand, aseqnum, pureack))
+                        amazonThread.start()
+                    # send ack number back to world
+            except:
+                print("world error!!!!!!!")
 def create_start_delivery(databaseconnect,order_id,truck_id,package_id,description):
     orderinfo=get_order(databaseconnect,order_id)
     global request_world_seqnum
@@ -377,7 +384,7 @@ def pickup(databaseconnect,aurequesttruck,world_socket):
             updateTruckStatus(databaseconnect,i,"gopickup")
             break
     if idletruck==0:
-         for j in range(225):
+         for j in range(400):
              statusinfo=getTruckStatus(databaseconnect,j)
              if statusinfo[0][0]=="arrive warehouse" or statusinfo[0][0]=="delivering":
                  pickedtruckid=j
