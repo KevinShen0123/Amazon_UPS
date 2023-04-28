@@ -131,8 +131,8 @@
 				<thead>
 					<tr>
 						<th scope="col">#</th>
+            <th scope="col">Order Number</th>
 						<th scope="col">Track Number</th>
-						<th scope="col">Order Number</th>
 						<th scope="col">Status</th>
             <th scope="col">Detail</th>
 					</tr>
@@ -141,10 +141,19 @@
           {% for pack in packageList %}
           <tr>
             <td>{{ forloop.counter }}</td> 
+            <td>{{pack.order_id}}</td>
 						<td>{{pack.package_id}}</td>
-						<td>{{pack.order_id}}</td>
 						<td>{{pack.d_status}}</td>
             <td><a href="{% url 'packageDetail' pack.package_id %}">Detail</a></td>
+          </tr>
+          {% endfor %}
+          {% for pack in readyList %}
+          <tr>
+            <td>{{ forloop.counter }}</td> 
+            <td>{{pack.order.order_id}}</td>
+						<td>Unavailable at this moment</td>
+						<td>{{pack.d_status}}</td>
+            <td><a href="{% url 'addrUpdate' pack.order.order_id %}">Update Delivery Address</a></td>
           </tr>
           {% endfor %}	
 				</tbody>
