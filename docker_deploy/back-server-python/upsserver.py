@@ -129,14 +129,14 @@ def handle_front_end(databaseconnection,socket_to_front,socket_to_world,socket_t
              break
          else:
              msg_arr=msg.split(",")
-             oid=int(msg_arr[0])
+             pid=int(msg_arr[0])
              destx=int(msg_arr[1])
              desty=int(msg_arr[2])
-             # updateDeliveryStatus(databaseconnection,pid,"delivering")
-             # updateDeliveryAddr(databaseconnection,packageId=pid,dest_x=destx,dest_y=desty)
-             # dinfo = get_delivery(databaseconnection, pid)
-             # oid = dinfo[0][2]
-             # tid=dinfo[0][3]
+             updateDeliveryStatus(databaseconnection,pid,"delivering")
+             updateDeliveryAddr(databaseconnection,packageId=pid,dest_x=destx,dest_y=desty)
+             dinfo = get_delivery(databaseconnection, pid)
+             oid = dinfo[0][2]
+             tid=dinfo[0][3]
              amazon_seq_lock.acquire()
              request_amazon_seqnum+=1
              uaseqnum.append(request_amazon_seqnum)
@@ -145,6 +145,15 @@ def handle_front_end(databaseconnection,socket_to_front,socket_to_world,socket_t
              uacommand.destinationupdated.append(destinationupdated)
              amazonThread=Thread(target=send_message_to_amazon_and_check_ack,args=(socket_to_amazon,uacommand,uaseqnum,False))
              amazonThread.start()
+             Udeliverylocation=protocol_buffer.to_UDeliverLOcation(pid,destx,desty)
+             world_seq_lock.acquire()
+             request_world_seqnum+=1
+             world_seq_lock.release()
+             ugodeliver=protocol_buffer.to_UGoDeliver(tid,Udeliverylocation,request_world_seqnum)
+             ucommand=world_ups_pb2.UCommands()
+             ucommand.deliveries.append(ugodeliver)
+             worldThread=Thread(target=send_message_to_world_and_check_ack,args=(socket_to_world,ucommand,[request_world_seqnum],False))
+             worldThread.start()
 def connect_frontend_socket(databaseconnection,socket_to_world,socket_to_amz, frontip,frontport):
     try:
         print("connect to frontend")
@@ -537,11 +546,6 @@ def connect_to_database():
                    Y INT,
                    WHID INT PRIMARY KEY
                    );''')
-    cur.execute('''CREATE TABLE IF NOT EXISTS ORDER_STATUS(
-                      STATUS VARCHAR(256),
-                      M_TIME TIMESTAMP,
-                      FOREIGN KEY (ORDER_ID) REFERENCES ORDERS(ORDER_ID) ON DELETE CASCADE ON UPDATE CASCADE
-                      );''')
     print("Creating DELIVERY table")
     connect.commit()
     # connect.close()
