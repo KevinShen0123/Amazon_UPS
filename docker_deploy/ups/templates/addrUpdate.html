@@ -13,7 +13,7 @@
 
 
     <link href="/static/bootstrap/css/bootstrap.min.css" rel="stylesheet">
-    
+
     <style>
       .bd-placeholder-img {
         font-size: 1.125rem;
@@ -89,28 +89,18 @@
       <button type="button" class="btn btn-outline-primary me-2"><a href="{% url 'logout_page' %}">Logout</a></button>
     </div>
   </header>
-    
+
 <main>
   <div class="row g-5">
-    <div class="col-md-7 col-lg-8">      
+    <div class="col-md-7 col-lg-8">
 		<h4 class="mb-3">Update Delivery Address</h4>
-        <form action="{% url 'addrUpdate' package.package_id %}" method="post" needs-validation novalidate>
+        <form action="{% url 'addrUpdate' order.order_id %}" method="post" needs-validation novalidate>
         {% csrf_token %}
         <div class="row g-3">
-          <div class="col-sm-6">
+
+          <div class="col-12">
             <div class="form-label-signup">
-              <label for="vehicleType" class="form-label">Package ID</label>
-            </div>
-            <div class="input-group has-validation">
-              <div class="form-control">{{ package.package_id }}</div>
-            </div>
-          </div>
-          <div class="col-sm-6">
-            <div class="form-label-signup">
-              <label for="licensePlateNumber" class="form-label">Order ID</label>
-            </div>
-            <div class="input-group has-validation">
-                <div class="form-control">{{ package.order_id }}</div>
+              <label for="licensePlateNumber" class="form-label">The order you are updating the address of is <strong>{{ order.order_id }}</strong></label>
             </div>
           </div>
 
@@ -118,14 +108,14 @@
             <div class="form-label-signup">
               <label for="maxPassenger" class="form-label">Destination X</label>
             </div>
-            <input type="text" class="form-control" name="dest_x" value="{{package.dest_x}}" required>
+            <input type="text" class="form-control" name="dest_x" value="{{order.dest_x}}" required>
           </div>
 
           <div class="col-sm-6">
             <div class="form-label-signup">
               <label for="specialInfo" class="form-label">Destination Y</label>
             </div>
-            <input type="text" class="form-control" name="dest_y" value="{{package.dest_y}}" required>
+            <input type="text" class="form-control" name="dest_y" value="{{order.dest_y}}" required>
           </div>
 
 

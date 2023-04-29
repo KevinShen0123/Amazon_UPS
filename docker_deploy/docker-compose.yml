@@ -9,19 +9,23 @@ services:
       restart: always
       volumes:
             - data-volume:/var/lib/postgresql/data
-  web-server:
-    build: ./back-server-python
-    volumes:
-      - ./back-server-python:/code
-    depends_on:
-      - db
   web-init:
     build: .
     volumes:
       - .:/frontcode
     links:
       - db:db
+    ports:
+      - "8000:8000"
     depends_on:
       - db
+  web-server:
+    build: ./back-server-python
+    volumes:
+      - ./back-server-python:/code
+    ports:
+       - "8080:8080"
+    depends_on:
+      - web-init
 volumes:
    data-volume:

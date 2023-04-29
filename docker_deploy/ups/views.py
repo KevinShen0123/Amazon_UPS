@@ -18,19 +18,17 @@ from django.core.mail import EmailMessage
 from django.conf import settings
 from django.urls import reverse
 from django.shortcuts import redirect
-
-
 # Create your views here.
 def login_page(request):
     if request.method == "POST":
         username = request.POST.get('username')
         password = request.POST.get('password')
-        
+
         if User.objects.filter(username=username).exists():
             user = authenticate(username=username, password=password)
-            #user = authenticate(username=username, password=password)   # Django authenticate
+            # user = authenticate(username=username, password=password)   # Django authenticate
             if user:
-                auth_login(request, user)    #
+                auth_login(request, user)  #
                 return HttpResponseRedirect('/')
             else:
                 return render(request, 'login.html', {
@@ -39,7 +37,7 @@ def login_page(request):
         else:
             # messages.error(request, 'Please enter a valid username.')
             return render(request, 'login.html', {'err_code': 'Invalid username/password'})
-       
+
     return render(request, 'login.html')
 
 
@@ -47,8 +45,9 @@ def logout_page(request):
     auth_logout(request)
     return HttpResponseRedirect('/')
 
+
 def signup_page(request):
-    if request.method =="POST":
+    if request.method == "POST":
         username = request.POST.get('username')
         if User.objects.filter(username=username).exists():
             return render(request, 'signup.html', {'err_code': 'Someone has already use this username.'})
@@ -56,8 +55,8 @@ def signup_page(request):
             password = request.POST.get('password')
             email = request.POST.get('email')
             firstname = request.POST.get('firstname')
-            lastname =request.POST.get('lastname')
-            
+            lastname = request.POST.get('lastname')
+
             user = User.objects.create_user(username, email, password)
             user.first_name = firstname
             user.last_name = lastname
@@ -71,22 +70,44 @@ def main(request):
     username = request.user.username
     is_authenticated = request.user.is_authenticated
     upsaccount = username
-    package_list =Delivery.objects.filter(order__in=Order.objects.filter(upsaccount=upsaccount))
+    order_list = Order.objects.filter(upsaccount=upsaccount)
+    package_list = []
+    ready_list = []
+    for order in order_list:
+        # get the deliveries for the order
+        deliveries = order.deliveries.all()
+
+        if deliveries.exists():
+            # add the existing deliveries to the package list
+            package_list.extend(deliveries)
+        else:
+            # create a new delivery object for the order
+            delivery_data = {
+                'order': order,
+                'truck': None,
+                'dest_x': order.dest_x,
+                'dest_y': order.dest_y,
+                'descr': 'Unavailable at this moment',
+                'd_status': 'ready',
+            }
+            ready_list.append(delivery_data)
     context = {
         'packageList': package_list,
-        'user':user,
+        'readyList': ready_list,
+        'user': user,
         'is_authenticated': is_authenticated
-    } 
+    }
     return render(request, 'main.html', context)
 
 
 @login_required
 def packageDetail(request, pack_id):
-    package = get_object_or_404(Delivery, pk=pack_id) 
+    package = get_object_or_404(Delivery, pk=pack_id)
     context = {
-        'package' : package
-    }  
+        'package': package
+    }
     return render(request, 'packageDetail.html', context)
+
 
 def search(request):
     query = request.GET.get('pack_search')
@@ -99,28 +120,52 @@ def search(request):
             username = request.user.username
             is_authenticated = request.user.is_authenticated
             upsaccount = username
-            package_list =Delivery.objects.filter(order__in=Order.objects.filter(upsaccount=upsaccount))
-            context['user'] = user
-            context['is_authenticated']= is_authenticated
+            order_list = Order.objects.filter(upsaccount=upsaccount)
+            package_list = []
+            ready_list = []
+            for order in order_list:
+                # get the deliveries for the order
+                deliveries = order.deliveries.all()
+
+                if deliveries.exists():
+                    # add the existing deliveries to the package list
+                    package_list.extend(deliveries)
+                else:
+                    # create a new delivery object for the order
+                    delivery_data = {
+                        'order': order,
+                        'truck': None,
+                        'dest_x': order.dest_x,
+                        'dest_y': order.dest_y,
+                        'descr': 'Unavailable at this moment',
+                        'd_status': 'ready',
+                    }
+                    ready_list.append(delivery_data)
+
             context['packageList'] = package_list
+            context['readyList'] = ready_list
+            context['user'] = user
+            context['is_authenticated'] = is_authenticated
         except Delivery.DoesNotExist:
             context['error_message'] = f"No package found with tracking number {query}."
     return render(request, 'main.html', context)
+
 
 @login_required
 def userinfo(request):
     context = {
         'user': request.user
     }
-    return render(request,'userinfo.html', context)
+    return render(request, 'userinfo.html', context)
+
 
 @login_required
 def useredit(request, userID):
-    if request.method =="POST":
+    if request.method == "POST":
         firstname = request.POST.get('firstname')
         lastname = request.POST.get('lastname')
         email = request.POST.get('email')
-        
+
         user = get_object_or_404(User, id=userID)
         user.first_name = firstname
         user.last_name = lastname
@@ -133,44 +178,48 @@ def useredit(request, userID):
         context = {
             'user': user
         }
-        return render(request,'useredit.html', context)
+        return render(request, 'useredit.html', context)
 
     return render(request, 'useredit.html')
 
-def addrUpdate(request, pack_id):
-    if request.method =="POST":
+
+def addrUpdate(request, order_id):
+    if request.method == "POST":
         dest_x = request.POST.get('dest_x')
         dest_y = request.POST.get('dest_y')
-        
-        delivery = get_object_or_404(Delivery, package_id=pack_id)
-        if dest_x is not None:  
-            delivery.dest_x = dest_x
-        if dest_y is not None:  
-            delivery.dest_y = dest_y
-        delivery.save()
+
+        order = get_object_or_404(Order, order_id=order_id)
+        if dest_x is not None:
+            order.dest_x = dest_x
+        if dest_y is not None:
+            order.dest_y = dest_y
+        order.save()
 
         print("sending email", request.user.email)
-        send_mail('Delivery Address Update', 'You delivery address has updated.', settings.EMAIL_HOST_USER, [request.user.email], fail_silently=False)
-        msg = str(pack_id)+","+str(dest_x)+","+str(dest_y)
+        send_mail('Delivery Address Update', 'You delivery address has updated.', settings.EMAIL_HOST_USER,
+                  [request.user.email], fail_silently=False)
+        msg = str(order_id) + "," + str(dest_x) + "," + str(dest_y)
         print("connecting to backend, sending: ", msg)
         try:
             backend_info = ('127.0.0.1', 8080)
-            socket_to_backend =  socket.socket()
+            socket_to_backend = socket.socket()
             socket_to_backend.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
 
             socket_to_backend.connect(backend_info)
             socket_to_backend.send(msg.encode('utf-8'))
-        except :
+            socket_to_backend.close()
+        except:
             error_message = 'lost connection to server!'
             print(error_message)
-        return redirect(reverse('packageDetail', args=[pack_id]))
+        context = get_main_info(request)
+        return render(request, 'main.html', context)
     else:
-        package = get_object_or_404(Delivery, pk= pack_id)
+        order = get_object_or_404(Order, pk=order_id)
         user = request.user
         context = {
-            'package': package
+            'order': order
         }
-        return render(request,'addrUpdate.html', context)
+        return render(request, 'addrUpdate.html', context)
 
 
 def connect_backend(request):
@@ -178,13 +227,48 @@ def connect_backend(request):
     print("connecting to backend")
     try:
         backend_info = ('127.0.0.1', 8080)
-        socket_to_backend =  socket.socket()
+        socket_to_backend = socket.socket()
         socket_to_backend.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
 
         socket_to_backend.connect(backend_info)
         socket_to_backend.send(msg.encode('utf-8'))
         print(msg)
-    except :
+    except:
         error_message = 'lost connection to server!'
         print(error_message)
     return render(request, 'main.html')
+
+
+def get_main_info(request):
+    user = request.user
+    username = request.user.username
+    is_authenticated = request.user.is_authenticated
+    upsaccount = username
+    order_list = Order.objects.filter(upsaccount=upsaccount)
+    package_list = []
+    ready_list = []
+    for order in order_list:
+        # get the deliveries for the order
+        deliveries = order.deliveries.all()
+
+        if deliveries.exists():
+            # add the existing deliveries to the package list
+            package_list.extend(deliveries)
+        else:
+            # create a new delivery object for the order
+            delivery_data = {
+                'order': order,
+                'truck': None,
+                'dest_x': order.dest_x,
+                'dest_y': order.dest_y,
+                'descr': 'Unavailable at this moment',
+                'd_status': 'ready',
+            }
+            ready_list.append(delivery_data)
+    context = {
+        'packageList': package_list,
+        'readyList': ready_list,
+        'user': user,
+        'is_authenticated': is_authenticated
+    }
+    return context

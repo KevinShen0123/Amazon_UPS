@@ -1,4 +1,3 @@
-import django
 import os
 import sys
 from concurrent.futures import ThreadPoolExecutor
@@ -66,7 +65,6 @@ def send_message_to_amazon(socket,msg):
     print("Please wait 2 seconds to send message to amazon")
     amazon_socket_lock.release()
     time.sleep(2)
-
 def send_message_to_world_and_check_ack(socket,msg,seqnum,pure_ack):#same as method below
     global world_acked_num
     while True:
@@ -237,7 +235,7 @@ def handle_world_connections(database_connect,world_socket,amazon_socket):
    global world_id
    global world_seq_nums
    while amazon_connect_world is False:
-         print("Please wait amazon to connect world")
+         # print("Please wait amazon to connect world")
          i=1
    print("amazon connected!!!!!!!!")
    uconnectmessage=world_ups_pb2.UConnect()
@@ -534,7 +532,7 @@ def handle_amazon_connections(database_connect,world_socket,amazon_socket):
                                          args=(world_socket, ucommand, wseqnum, pureack))
                     worldThread.start()
 def connect_to_database():
-    connect=psycopg2.connect(host="127.0.0.1",database="mini_ups",user="postgres",password="20230101")
+    connect=psycopg2.connect(host="db",database="mini_ups",user="postgres",password="20230101")
     # connect.close()
     return connect
 def create_database(connect):
@@ -582,10 +580,11 @@ def create_database(connect):
     connect.commit()
 amazon_ip="vcm-30541.vm.duke.edu" #可以随时更改
 amazon_port=9090 #可以随时更改
-world_socket=connect_world_socket()
 database_connection1=connect_to_database()
 create_database(database_connection1)
 database_connection2=connect_to_database()
+print("connect success!!!!!!")
+world_socket=connect_world_socket()
 amazon_socket=connect_to_amazon(amazon_ip,amazon_port)
 print("connect success!!!!!!")
 worldThread=Thread(target=handle_world_connections,args=(database_connection1,world_socket,amazon_socket))
