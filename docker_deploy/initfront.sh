@@ -1,11 +1,14 @@
 #!/bin/bash
+
+echo "Waiting for PostgreSQL to be ready..."
+
+until PGPASSWORD=20230101 psql -h "db" -U "postgres" -c '\q'; do
+  echo "PostgreSQL not ready, waiting..."
+  sleep 2
+done
+
+echo "PostgreSQL ready, starting data migration."
+
+echo "data migrate starting"
 python3 manage.py makemigrations
 python3 manage.py migrate
-echo "data migrate starting"
-res="$?"
-while [ "$res" != "0" ]
-do
-    sleep 3;
-    python3 manage.py migrate
-    res="$?"
-done

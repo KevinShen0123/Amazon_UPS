@@ -10,5 +10,4 @@ CMD ["chmod 777 /frontcode/initfront.sh"]
 CMD ["chmod 777 /frontcode/runserver.sh"]
 RUN pip install django-model-utils
 RUN pip install psycopg2
-CMD ["bash","/frontcode/initfront.sh"]
-CMD ["bash","/frontcode/runserver.sh"]
+RUN echo "hello dockerfile 2"

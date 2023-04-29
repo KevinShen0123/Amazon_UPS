@@ -9,33 +9,19 @@ services:
       restart: always
       volumes:
             - data-volume:/var/lib/postgresql/data
-  web-init:
-      build: .
-      command: /frontcode/initfront.sh
-      volumes:
-        - .:/frontcode
-      links:
-         - db:db
-      depends_on:
-        - db
-  web:
-      build: .
-      user: nobody
-      command: /frontcode/runserver.sh
-      volumes:
-        - .:/frontcode
-      expose:
-        - "8000"
-      depends_on:
-        - web-init
   web-server:
     build: ./back-server-python
-    command: /code/runback.sh
     volumes:
       - ./back-server-python:/code
-    ports:
-      - "8080:8080" #ports for front
     depends_on:
-      - web
+      - db
+  web-init:
+    build: .
+    volumes:
+      - .:/frontcode
+    links:
+      - db:db
+    depends_on:
+      - db
 volumes:
    data-volume:

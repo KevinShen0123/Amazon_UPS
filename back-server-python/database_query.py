@@ -46,11 +46,6 @@ def addDelivery(connect, packageId, orderId, truckId, dest_x, dest_y, descriptio
         print("adddelivery: " + sql)
         cur.execute(sql)
         connect.commit()
-    # except:
-    #     print("exception happend!!!!!!!!")
-    #     pass
-        connect.commit()
-    # connect.close()
 def updateTruckStatus(connect, truckId, status):
     cur = connect.cursor()
     sql = "UPDATE TRUCK SET T_STATUS = "+"'"+status+"' WHERE TRUCK_ID="+str(truckId)+";"
@@ -58,15 +53,12 @@ def updateTruckStatus(connect, truckId, status):
     print("updateTruck: "+sql)
     cur.execute(sql)
     connect.commit()
-    # connect.close()
 def updateDeliveryStatus(connect, packageId, status):
     cur = connect.cursor()
     sql = "UPDATE DELIVERY SET D_STATUS = "+"'"+status+"' WHERE PACKAGE_ID="+str(packageId)+";"
     print("updateDelivery: "+sql)
     cur.execute(sql)
     connect.commit()
-    # connect.close()
-
 def updateDeliveryAddr(connect, packageId, dest_x, dest_y):
     cur = connect.cursor()
     sql_delivery = "UPDATE DELIVERY SET DEST_X ="+str(dest_x)+" ,DEST_Y="+str(dest_y)+" WHERE PACKAGE_ID="+str(packageId)+";"
@@ -79,8 +71,6 @@ def updateDeliveryAddr(connect, packageId, dest_x, dest_y):
     
     cur.execute(sql_delivery)
     connect.commit()
-    # connect.close()
-
 # return incomplete delivery for the truck
 def getCurrDelivery(connect, truckId):
     cur = connect.cursor()
@@ -88,7 +78,7 @@ def getCurrDelivery(connect, truckId):
     print("selectDelivery: "+sql)
     cur.execute(sql)
     rows = cur.fetchall()
-    # connect.close()
+    connect.commit()
     return rows
 
 # return truck status
@@ -99,6 +89,7 @@ def getTruckStatus(connect, truckId):
     cur.execute(sql)
     rows = cur.fetchall()
     # connect.close()
+    connect.commit()
     return rows
 def get_order(connect,order_id):
     cur = connect.cursor()
@@ -107,6 +98,7 @@ def get_order(connect,order_id):
     cur.execute(sql)
     rows = cur.fetchall()
     # connect.close()
+    connect.commit()
     return rows
 def add_warehouse(connect,Xcor,Ycor,WHID):
     try:
@@ -131,10 +123,12 @@ def get_warehouse_id(connect, x,y):
     sql+=str(x)
     sql+=" AND Y="
     sql+=str(y)
+    sql+=";"
     print("selectwarehouse: " + sql)
     cur.execute(sql)
     rows = cur.fetchall()
     # connect.close()
+    connect.commit()
     return rows
 def get_delivery(connect,packageid):
     cur = connect.cursor()
@@ -143,5 +137,22 @@ def get_delivery(connect,packageid):
     cur.execute(sql)
     rows = cur.fetchall()
     # connect.close()
+    connect.commit()
     return rows
-
+def add_order_status(connect,order_id,od_status):
+    cur = connect.cursor()
+    sql = "INSERT INTO ORDER_STATUS (ORDER_ID, OD_STATUS, M_TIME) VALUES (" + str(order_id) + ",'" + str(
+        od_status) + "'," + "NOW());"
+    print("selectDelivery: " + sql)
+    cur.execute(sql)
+    connect.commit()
+    return True
+def get_delivery_orderid(connect,packageid):
+    cur = connect.cursor()
+    sql = "SELECT ORDER_ID FROM DELIVERY WHERE PACKAGE_ID = " + str(packageid) + ";"
+    print("selectDelivery: " + sql)
+    cur.execute(sql)
+    rows = cur.fetchall()
+    # connect.close()
+    connect.commit()
+    return rows

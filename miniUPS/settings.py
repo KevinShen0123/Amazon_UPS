@@ -138,4 +138,4 @@ EMAIL_HOST_USER = 'ece5682023@gmail.com'
 EMAIL_HOST_PASSWORD = 'gwemwfybjcxnzlnw'
 EMAIL_USE_TLS = True
 
-CSRF_TRUSTED_ORIGINS = ['http://*.127.0.0.1:8000','http://*.localhost:8000'] 
+CSRF_TRUSTED_ORIGINS = ['http://*.127.0.0.1:8000','http://*.localhost:8000','http://*.vcm-33165.vm.duke.edu:8000']

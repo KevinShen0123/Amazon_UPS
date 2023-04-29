@@ -120,10 +120,32 @@ def search(request):
             username = request.user.username
             is_authenticated = request.user.is_authenticated
             upsaccount = username
-            package_list =Delivery.objects.filter(order__in=Order.objects.filter(upsaccount=upsaccount))
+            order_list = Order.objects.filter(upsaccount=upsaccount)
+            package_list = []
+            ready_list = []
+            for order in order_list:
+                # get the deliveries for the order
+                deliveries = order.deliveries.all()
+
+                if deliveries.exists():
+                    # add the existing deliveries to the package list
+                    package_list.extend(deliveries)
+                else:
+                    # create a new delivery object for the order
+                    delivery_data = {
+                        'order': order,
+                        'truck': None,
+                        'dest_x': order.dest_x,
+                        'dest_y': order.dest_y,
+                        'descr': 'Unavailable at this moment',
+                        'd_status': 'ready',
+                    }
+                    ready_list.append(delivery_data)
+                
+            context['packageList']= package_list
+            context['readyList'] = ready_list
             context['user'] = user
-            context['is_authenticated']= is_authenticated
-            context['packageList'] = package_list
+            context['is_authenticated'] = is_authenticated
         except Delivery.DoesNotExist:
             context['error_message'] = f"No package found with tracking number {query}."
     return render(request, 'main.html', context)
@@ -169,7 +191,7 @@ def addrUpdate(request, order_id):
         if dest_y is not None:  
             order.dest_y = dest_y
         order.save()
-
+        
         print("sending email", request.user.email)
         send_mail('Delivery Address Update', 'You delivery address has updated.', settings.EMAIL_HOST_USER, [request.user.email], fail_silently=False)
         msg = str(order_id)+","+str(dest_x)+","+str(dest_y)
@@ -181,6 +203,7 @@ def addrUpdate(request, order_id):
 
             socket_to_backend.connect(backend_info)
             socket_to_backend.send(msg.encode('utf-8'))
+            socket_to_backend.close()
         except :
             error_message = 'lost connection to server!'
             print(error_message)
