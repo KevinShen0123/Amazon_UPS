@@ -6,7 +6,7 @@ from model_utils import Choices
 # Create your models here.
 
 class Truck(models.Model):
-    truck_id = models.IntegerField()
+    truck_id = models.IntegerField(primary_key=True)
     x = models.IntegerField()
     y = models.IntegerField()
     STATUS = Choices('idle', 'go pickup', 'arrive wharehouse', 'delivering', 'delivered') 
@@ -48,3 +48,42 @@ class Delivery(models.Model):
     class Meta:
         managed = False
         db_table = 'delivery'
+
+class OrderStatus(models.Model):
+    order_id = models.IntegerField()
+    od_status =models.CharField(max_length=300)
+    m_time = models.DateTimeField()
+    
+    def __str__(self):
+        return self.order_id + ", status: " + self.od_status
+
+    class Meta:
+        managed = False
+        db_table = 'order_status'
+        constraints = [
+            models.UniqueConstraint(fields=['order_id', 'od_status'], name='unique_order_status')
+        ]
+
+class WareHouse(models.Model):
+    whid = models.IntegerField(primary_key=True)
+    x = models.IntegerField()
+    y = models.IntegerField()
+    
+    def __str__(self):
+        return self.whid 
+
+    class Meta:
+        managed = False
+        db_table = 'warehouse'
+
+class Driver(models.Model):
+    driver_id = models.IntegerField(primary_key=True, default=0)
+    deliveries = models.ManyToManyField(Delivery, blank=True)
+    trucks = models.ForeignKey(Truck, blank=True, on_delete=models.CASCADE)
+
+
+class DeliveryProof(models.Model):
+    delivery = models.OneToOneField(Delivery, primary_key=True,on_delete=models.CASCADE) 
+    proof = models.CharField(max_length=300)
+    def __str__(self):
+        return self.delivery.package_id
