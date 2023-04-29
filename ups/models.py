@@ -12,7 +12,7 @@ class Truck(models.Model):
     STATUS = Choices('idle', 'go pickup', 'arrive wharehouse', 'delivering', 'delivered') 
     t_status = StatusField()
     def __str__(self):
-        return ", status: " + self.t_status
+        return self.truck_id + " with status: " + self.t_status
 
     class Meta:
         managed = False
@@ -77,10 +77,8 @@ class WareHouse(models.Model):
         db_table = 'warehouse'
 
 class Driver(models.Model):
-    driver_id = models.IntegerField(primary_key=True, default=0)
+    truck = models.ForeignKey(Truck, on_delete=models.CASCADE, related_name='driver')
     deliveries = models.ManyToManyField(Delivery, blank=True)
-    trucks = models.ForeignKey(Truck, blank=True, on_delete=models.CASCADE)
-
 
 class DeliveryProof(models.Model):
     delivery = models.OneToOneField(Delivery, primary_key=True,on_delete=models.CASCADE) 

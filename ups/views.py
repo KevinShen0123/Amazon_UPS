@@ -18,6 +18,8 @@ from django.core.mail import EmailMessage
 from django.conf import settings
 from django.urls import reverse
 from django.shortcuts import redirect
+import os
+
 
 
 # Create your views here.
@@ -316,10 +318,43 @@ def delSearch(request):
     context = {}
     if query:
         try:
-            driver = Driver.objects.get(driver_id=query)
-            deliveries = driver.deliveries.all()
+            #driver = Driver.objects.get(truck_id=query)
+            #deliveries = driver.deliveries.all()
+            deliveries = Delivery.objects.filter(driver__truck_id=query)
             context['deliveries'] = deliveries
         except Delivery.DoesNotExist:
             context['error_message'] = f"No package found with tracking number {query}."
        
     return render(request, 'driverportal.html', context)
+
+def addDelProof(request, pack_id):
+  if request.method == "GET":
+       context = {'pack_id': pack_id}
+       return render(request, 'uploadproof.html', context)
+  if request.method == "POST":
+    error = ""
+    fp = request.FILES.get("file")
+    # fp got the file object
+    if fp:
+      path = os.path.join(settings.STATICFILES_DIRS[0],'image/' + fp.name)  # uploaded file storage path
+      # fp.name file name 
+      #yield = fp.chunks() # got the file chunk from the stream
+      # fp.read() reading the file content
+      if fp.multiple_chunks():  # check if the file size is greater than 2.5MB
+        
+        file_yield = fp.chunks()  # write in the file
+        with open(path,'wb') as f:
+          for buf in file_yield:  
+            f.write(buf)
+          else:
+            print("File Uploaded. (large file)")
+      else:
+        with open(path,'wb') as f:
+          f.write(fp.read())
+        print("File Uploaded. (small file)")
+      models.ImgPath.objects.create(path=('image/' + fp.name))   # image是static文件夹下专门存放图片的文件夹
+    else:
+      error = "Error: Uploaded file is empty."
+      return render(request,"uploadproof",locals())
+    return render(request, 'driverportal.html')
+ 

@@ -17,6 +17,6 @@ urlpatterns = [
     path('useredit/<int:userID>', views.useredit, name='useredit'),
     path('driverportal/', views.driverportal, name='driverportal'),
     path('send_delivery_email', views.send_delivery_email, name='sendDelEmail'),
-    path('<int:pack_id>/adddelproof/', views.addDelProof, name='addDelProof'),
+    path('<int:pack_id>/adddelproof', views.addDelProof, name='addDelProof'),
 
 ]
