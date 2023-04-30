@@ -1,10 +1,31 @@
 ============== Danger Identification ==============
-
-
-
+1.At the first version, our group send message to world and amazon too frequent, which may cause siginificant concurrency problems and parsing error.
+2. At very beginning, our group don't have the logic of processing receive same request mutiple times, it is possible we can send mutiple requests for same goal to world after recieving the message from amazon mutiple times.
+3. Our processing logic at first lacks the process of how to handle acks from the world and amazon, may cause socket error.
+4. our database connections at first use same connection among mutiple threads, which can cause big problem.
+5. Our logic of processing of completions, at first is wrong, we don't treat it as order delivered.
+6.We did not commit our database transactions correctly in the first version.
+7.our program may send malform google protocol buffer message to world when we only receive acks message from the world.
+8.our program did not handle the situation where we need to only send acks to amazon, no commands correctly at first
+9.our docker configuration did not migrate successfully in the first version.
+10.we just create three tables at the very beginning, which , as we find later, is not enough.
+11.In the first version, when the user is not login, he can see the userinfo page in navigate bars of the page, which is not reasonable.
+12.not authenticated user may see the details of each package 
+13.user can't track the package status until it is out of deliver which make update address difficult.
+14.user can change the destinations even after delivery.
 ============== Danger Resolutions ==============
-
-
-
-============== Unresolved ==============
+1. We add time.sleep() when we send message to world and amazon, to make it less frequent.
+2. We store the incoming request seqnum locally for amazon, if we met it and processed it before, we will ignore it and just reply corresponding acks
+3. We add the judgement that if we just receive acks from the world and amazon, we will process nothing and receive next message.
+4.we use different database connections for different threads.
+5.we add the logic of treating completions delivered when the truck finished its all delivery.
+6. we modify them to commit the transactions each time execute sql.
+7. because 3 is solved, this also solved.
+8.we add the attribute pureack, if it is true, we send acks back and break, receive next message.
+9.we change the location to make migrate and runserver locate together.
+10.we add 5 plus more database during the process of testing.
+11.we add conditions to judge whether user logged in.
+12.we add conditions to judge user login status
+13. user can track the status just after order created.
+14. user can't have the choice to change destinations after the package is out of delivery.
 
