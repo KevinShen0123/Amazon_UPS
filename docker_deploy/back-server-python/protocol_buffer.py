@@ -75,7 +75,7 @@ def to_UAOrderDelivered(packageid,destx,desty,seqnum):
     uAOrderDelivered=amazon_ups_pb2.UAOrderDelivered()
     uAOrderDelivered.packageid=packageid
     uAOrderDelivered.destinationx=destx
-    uAOrderDelivered.destintiony=desty
+    uAOrderDelivered.destinationy=desty
     uAOrderDelivered.seqnum=seqnum
     return uAOrderDelivered
 def to_UACommands(connectedtoworlds,destinationupdateds,truckarrives,orderdepartures,orderdelivers,acks,errors):

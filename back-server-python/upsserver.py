@@ -163,7 +163,7 @@ def connect_frontend_socket(databaseconnection,socket_to_world,socket_to_amz, fr
         print(ex)
 
 def connect_world_socket():
-    world_host = 'vcm-30541.vm.duke.edu'
+    world_host = 'vcm-30499.vm.duke.edu'
     world_info = (world_host, 12345)
     socket_to_world = socket.socket()
     try:
@@ -261,7 +261,7 @@ def handle_world_connections(database_connect,world_socket,amazon_socket):
              #print("world connection error!!!!")
              break
          else:
-            try:
+            if 2==2:
                 uResponseMessage = world_ups_pb2.UResponses()
                 ucommand = world_ups_pb2.UCommands()
                 uacommand = amazon_ups_pb2.UACommands()
@@ -271,22 +271,44 @@ def handle_world_connections(database_connect,world_socket,amazon_socket):
                 wseqnum = []  # the seqnum that need check ack for world
                 aseqnum = []  # the seqnum that need check ack for amazon
                 if 1 == 1:
-                    uResponseMessage.ParseFromString(message)
-                    print("message is:::::")
-                    print(uResponseMessage)
-                    print("message that::::::")
-                    handle_world_ack(uResponseMessage)
+                    try:
+                        uResponseMessage.ParseFromString(message)
+                        print("message is:::::")
+                        print(uResponseMessage)
+                        print("message that::::::")
+                        handle_world_ack(uResponseMessage)
+                    except:
+                        continue
                     count = 0
                     for ufinish in uResponseMessage.completions:
                         count += 1
                         ucommand.acks.append(ufinish.seqnum)
                         truckinfo = getTruckStatus(database_connect, ufinish.truckid)
                         print("truck info is:" + str(truckinfo))
-                        if truckinfo[0][0] == "delivering":
+                        if ufinish.status== "IDLE" or ufinish.status=="idle":
                             dinfo = getCurrDelivery(database_connect, ufinish.truckid)
                             for dinfos in dinfo:
+                                print("dinfos"+str(dinfos))
                                 updateDeliveryStatus(database_connect, dinfos[1], "delivered")
                                 updateTruckStatus(database_connect, dinfos[3], "idle")
+                                print("update truck status success!!!!!!")
+                                pid=dinfos[1]
+                                destx=dinfos[4]
+                                desty=dinfos[5]
+                                print("no syntax error")
+                                print(pid)
+                                print(destx)
+                                print(desty)
+                                amazon_seq_lock.acquire()
+                                request_amazon_seqnum+=1
+                                amazon_seq_lock.release()
+                                print("lock correct")
+                                aseqnum.append(request_amazon_seqnum)
+                                print("append success!!!!!")
+                                deliveredorder=protocol_buffer.to_UAOrderDelivered(pid, destx, desty,request_amazon_seqnum)
+                                print("buffer start success!!!!!!!!")
+                                uacommand.orderdelivered.append(deliveredorder)
+                                print("ua delivered is:::"+str(uacommand))
                         else:
                             if truckinfo[0][0] == "gopickup":
                                 wx = ufinish.x
@@ -353,8 +375,8 @@ def handle_world_connections(database_connect,world_socket,amazon_socket):
                                               args=(amazon_socket, uacommand, aseqnum, pureack))
                         amazonThread.start()
                     # send ack number back to world
-            except:
-                print("world error!!!!!!!")
+             #except:
+             #    print("world error!!!!!!!")
 def create_start_delivery(databaseconnect,order_id,truck_id,package_id,description):
     orderinfo=get_order(databaseconnect,order_id)
     global request_world_seqnum
@@ -532,7 +554,7 @@ def handle_amazon_connections(database_connect,world_socket,amazon_socket):
                                          args=(world_socket, ucommand, wseqnum, pureack))
                     worldThread.start()
 def connect_to_database():
-    connect=psycopg2.connect(host="db",database="mini_ups",user="postgres",password="20230101")
+    connect=psycopg2.connect(host="127.0.0.1",database="mini_ups",user="postgres",password="20230101")
     # connect.close()
     return connect
 def create_database(connect):
@@ -578,7 +600,7 @@ def create_database(connect):
                          );''')
     print("Creating DELIVERY table")
     connect.commit()
-amazon_ip="vcm-30541.vm.duke.edu" #可以随时更改
+amazon_ip="vcm-30499.vm.duke.edu" #可以随时更改
 amazon_port=9090 #可以随时更改
 database_connection1=connect_to_database()
 create_database(database_connection1)
