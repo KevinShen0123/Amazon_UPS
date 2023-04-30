@@ -323,7 +323,7 @@ def delSearch(request):
             deliveries = Delivery.objects.filter(driver__truck_id=query)
             context['deliveries'] = deliveries
         except Delivery.DoesNotExist:
-            context['error_message'] = f"No package found with tracking number {query}."
+            context['error_message'] = f"No Delivery found with driver ID: {query}."
        
     return render(request, 'driverportal.html', context)
 
