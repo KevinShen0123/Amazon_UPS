@@ -13,4 +13,4 @@ A Few Important things for reminder to run the project:
 3. Please reminder to change the port, in mini_amazon/web-app/README.md, there is a clear instruction on how to change the port for amazon, after you have the port for amazon, please cd back to the UPS directory, Go to docker_deploy/back-server-python/upsserver.py, line 603, 604 change the ip(localhost if you run together) and the port(the port you decided to use for amazon)
 Enjoy the project! you should first puchase order in amazon and to check the order status in UPS side.
 Please see score and feedback proof via:
-https://drive.google.com/drive/my-drive?hl=en
+https://drive.google.com/file/d/1P0Cw1TaS7zyoxrcxvxPqBkZJcS5uWA8_/view?usp=sharing
