@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+
+    <form method="get">
+        <input type="text" name="q" placeholder="Search By " value="{{ query }}">
+        <button type="submit">Search</button>
+    </form>
+
+
+     {% if query %}
+        <h1>Search Results for "{{ query }}"</h1>
+
+        {% if results %}
+            <ul>
+                {% for result in results %}
+                    <li><a href="{% url 'detail'  result.product_id  %}">{{ result.product_name }}</a></li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No results found.</p>
+        {% endif %}
+     {% else %}
+         <h1>You can enter the catalog you want</h1>
+         {% if results %}
+            <ul>
+                {% for result in results %}
+                    <li><a href="{% url 'detail'  result.product_id  %}">{{ result.product_name }}</a></li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No results found.</p>
+        {% endif %}
+
+     {% endif %}
+
+{% endblock content %}

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container">
+
+    <div class="accordion" id="accordionPanelsStayOpenExample">
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="panelsStayOpen-headingOne">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#panelsStayOpen-collapseOne" aria-expanded="true"
+                    aria-controls="panelsStayOpen-collapseOne">
+                    All your confirmed orders:
+                </button>
+            </h2>
+            <div id="panelsStayOpen-collapseOne" class="accordion-collapse collapse show"
+                aria-labelledby="flush-headingOne" data-bs-parent="#accordionFlushExample">
+                <div class="accordion-body">
+                    <table class="table table-striped table-hover table-responsive">
+                        <!-- tr表示每一行， td表示每一个元素 -->
+                        <thead>
+                            <tr>
+                                <!-- tr表示table row， 指一行 -->
+                                <!-- th相当于是列表的头，告知这一列是什么元素 -->
+                                <th>Package ID</th>
+                                <th>Package Description</th>
+                                <th>Product Amount</th>
+                                <th>Product Price</th>
+                                <th>Package Status</th>
+
+
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for package in packages_list %}
+                            <tr>
+                                <!-- td表示每一行里面的元素 -->
+                                <td>{{ package.package_id}}</td>
+                                <td>{{ package.package_desc}}</td>
+                                <td>{{ package.amount}}</td>
+                                <td>{{ package.product.price}}</td>
+                                <td>{{ package.status}}</td>
+
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <br>
+    <a href="{% url 'home' %}"><button>return</button>
+    </a>
+    <br>
+</div>
+{% endblock content %}

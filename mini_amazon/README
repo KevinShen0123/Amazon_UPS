@@ -1,0 +1,11 @@
+ When you clone our project from gitlab,you can following these steps to run our projects in docker
+ 1. cd web-app/Finalproc to change the database settings of Django project.
+ 2. cd server, change the server constructor in server.cpp(chage the world host and port, UPS host and port, and webPort)
+ 3. change the DB settings in server.cpp and processFunction.cpp
+ 4. Before you run docker, firstly, you make sure drop all tables in the Docker,that is,make sure the mini_amazon database in Docker is empty
+ 5. cd web-app/amamzon. Then run rm -rf migrations to remove the migrations from this directory
+ 6. cd web-app, Run chmod +x runserver.sh       chmod +x initserver.sh   
+ 7. cd server, run make clean to clean the server, and make it again.
+ 8. Run  sudo docker-compose down
+ 9. Run  sudo docker-compose build
+ 10. Run  sudo docker-compose up

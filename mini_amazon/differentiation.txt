@@ -1,0 +1,6 @@
+1. We implemented basic user registration/login functionality. At the same time, users can only operate after logging in, otherwise they will be directed to the login interface.
+2. It is mentioned in project sepc that when the user places an order, he can specify the address to be delivered to the package in the order and the UPS account related to the order.
+Therefore, we have expanded the built-in user. Users can set their default address and ups account in Edit my, or manually change it when placing an order.
+3. We have implemented a shopping cart functionality where users can choose to add products to their cart after searching for them. Then, the user can perform operations on the product in the shopping cart, such as deleting the product, or selecting multiple products for settlement together (multiple products are counted as one order.)
+4. We have realized the use of catalog search function, users can enter catalog to search for corresponding products. It is also possible to display all products without searching.
+5. We define that an order can have multiple packages, and each package can only contain one product, so users can query the information and status of different packages in each order. This is to accommodate shopping cart functionality and the fact that multiple packages in an order may come from different warehouses.
